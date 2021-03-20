@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link href="/static/styles.css" rel="stylesheet">
+
+    <title> My Financial Tracker</title>
+
+</head>
+
+<body>
+    <div class="container">
+        {% if newuser %}
+            <h1>Enter a username and password</h1>
+        {% else %}
+            <h1>Please login</h1>
+        {% endif %}
+        <br>
+        <form action="" method="post">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" placeholder="Username" name="username" value="{{
+                      request.form.username }}">
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" placeholder="Password" name="password" value="{{
+                      request.form.password }}">
+            </div>
+            {% if newuser %}
+            <input class="btn btn-submit" type="submit" value="Register">
+            {% else %}
+            <input class="btn btn-submit" type="submit" value="Login">
+            {% endif %}
+        </form>
+        {% if error %}
+        <p class="error"><strong>Error:</strong> {{ error }}
+        {% endif %}
+        {% if not newuser %}
+        <a href="/newuser">Register here!</a>
+        {% endif %}
+    </div>
+</body>
+
+</html>

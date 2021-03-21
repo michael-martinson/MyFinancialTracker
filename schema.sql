@@ -6,7 +6,7 @@ DROP TABLE IF EXISTS expenses;
 -- Creating new tables
 CREATE TABLE users (
     user_id INTEGER PRIMARY KEY,
-    username varchar(25) NOT NULL,
+    username varchar(25) NOT NULL PRIMARY KEY,
     password char(64) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES goals(user_id),
@@ -15,11 +15,11 @@ CREATE TABLE users (
 
 CREATE TABLE expenses (
     expense_id INTEGER PRIMARY KEY,
-    date DATE not NULL,
-    type varchar(10) NOT NULL,
-    amount MONEY,
     name varchar(100) NOT NULL,
-    category varchar(50) NOT NULL,
+    amount MONEY NOT NULL,
+    date DATE not NULL,
+    category varchar(50),
+    type varchar(10) NOT NULL,
     owner varchar(50),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
@@ -31,9 +31,9 @@ CREATE TABLE expenses (
 CREATE TABLE goals (
     goal_id INTEGER PRIMARY KEY,
     name varchar(100) NOT NULL,
-    amount MONEY,
+    amount MONEY NOT NULL,
+    target_date DATE,
     type varchar(10) NOT NULL,
-    target_date DATE not NULL,
     owner varchar(50),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,

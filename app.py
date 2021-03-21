@@ -25,11 +25,11 @@ app.secret_key = secrets.token_urlsafe(50)
 
 # default path
 @app.route("/")
-def home():
-    if 'username' in session:
-        app.logger.debug('Logged in as %s' % escape(session['username']))
-        return render_template("home.html", user=escape(session['username']))
-    return redirect(url_for('login'))
+def home(message=None):
+    if not check_logged_in():
+        redirect(url_for('login'))
+    app.logger.debug('Logged in as %s with message %s' % escape(session['username']), message)
+    return render_template("home.html", message=message, user=escape(session['username']))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -75,10 +75,26 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
 
+@app.route('/addexpense', methods=['Get', 'POST'])
+def addexpense():
+    if not check_logged_in():
+        return redirect(url_for('login'))
+    if request.method == 'GET': 
+        return redirect(url_for('home'))
+    db = DB(get_db())
+    db.addexpense(session['username'], request)
+    return redirect(url_for('home'))
 
 ########################################
 ## Utility functions                  ##
 ########################################
+
+def check_logged_in():
+    if 'username' in session:
+        print("you are logged in! " + session['username'])
+        return True
+    print("go log in")
+    return False
 
 # connect to db
 def get_db():

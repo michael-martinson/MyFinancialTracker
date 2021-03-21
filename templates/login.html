@@ -43,7 +43,9 @@
         <p class="error"><strong>Error:</strong> {{ error }}
         {% endif %}
         {% if not newuser %}
-        <a href="/newuser">Register here!</a>
+        <a href="/newuser">Don't have an account? Register here!</a>
+        {% else %}
+        <a href="/login">Go back to login.</a>
         {% endif %}
     </div>
 </body>

@@ -2,23 +2,28 @@
 
 <html lang="en">
 
-    <head>
+<head>
 
-        <!-- Required meta tags -->
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-        <link href="/static/styles.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/static/styles.css">
+    <script src="/static/jquery.min.js"></script>
+    <script src="/static/main.js"></script>
 
-        <title> My Financial Tracker</title>
+    <title> My Financial Tracker</title>
 
-    </head>
+</head>
 
-    <body>
-        <a href="/logout">Logout</a>
-        <main class="root">
-            {% block main %}{% endblock %}
-        </main>
-    </body>
+<body>
+    <a href="/logout">Logout</a>
+    {% if message %}
+    <div class="notify" style="color: aqua;">{{message}}</div>
+    {% endif %}
+    <main class="root">
+        {% block main %}{% endblock %}
+    </main>
+</body>
 
 </html>

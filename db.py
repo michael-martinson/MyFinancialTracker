@@ -25,6 +25,20 @@ class KeyNotFound(Exception):
         rv["message"] = self.message
         return rv
 
+# Error class for when a new user has the same username
+class UsernameAlreadyExists(Exception):
+    def __init__(self, message=None):
+        Exception.__init__(self)
+        if message:
+            self.message = message
+        else:
+            self.message = "Key/Id not found"
+
+    def to_dict(self):
+        rv = dict()
+        rv["message"] = self.message
+        return rv
+
 
 # Error class for when request data is bad
 class BadRequest(Exception):
@@ -53,8 +67,6 @@ def hash_password(password, salt = None):
 Wraps a single connection to the database with higher-level functionality.
 Holds the DB connection
 """
-
-
 class DB:
     def __init__(self, connection):
         self.conn = connection
@@ -80,6 +92,11 @@ class DB:
             self.conn.executescript(f.read())
         return '{"message":"created"}'
 
+
+    ########################################
+    ## User management                    ##
+    ########################################
+
     def add_user(self, request):
         username = request.form['username']
         password = request.form['password']
@@ -89,9 +106,15 @@ class DB:
         print("salt ", salt, len(salt), "key ", key, len(key))
         c = self.conn.cursor()
 
+        # enforce unique usernames
+        c.execute("select * from users where username = (?)", (username,))
+        record = c.fetchone()
+        if record:
+            print("The username {} already exists".format(username))
+            raise UsernameAlreadyExists("username already exists")
         try:
             c.execute("insert into users (username,password) values (?,?)", (username, salt+key))
-        except Exception as e:
+        except UsernameAlreadyExists as e:
             print("Failed to add new user: {}".format(e))
             raise BadRequest(e)
         
@@ -128,23 +151,84 @@ class DB:
         
         return True
 
-    def addexpense(self, username, request):
+
+    ########################################
+    ## Spending management                ##
+    ########################################
+
+    def addspending(self, username, request):
         # validate that all required info is here
-        name = request.form['e-name']
-        amount = request.form['e-amount']
-        category = request.form['e-category']
-        type = "payment"
-        owner = request.form['e-owner']
-        date = request.form['e-date']
+        name = request.form['name'].capitalize()
+        amount = request.form['amount']
+        category = request.form['category'].lower()
+        type = "spending"
+        owner = request.form['owner']
+        if not owner:
+            owner = username
+        date = request.form['date']
         if not date:
             date = datetime.date.today().strftime("%Y-%m-%d")
         
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = username").fetchone()[0]
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            print("inserting expense: ({}, {}, {}, {}, {}, {}, {})".format(name,amount,date,category,type,owner,user_id))
+            print("inserting spending: ({}, {}, {}, {}, {}, {}, {})".format(name,amount,date,category,type,owner,user_id))
+            c.execute("insert into expenses (name,amount,date,category,type,owner,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,type,owner,user_id))
+        except Exception as e:
+            print("Failed to add spending: {}".format(e))
+            raise BadRequest(e)
+            
+        c.close()
+        self.conn.commit()
+        return '{"message":"new spending inserted"}'
+
+    def myspending(self, username):
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            c.execute(
+                '''
+                select strftime("%m/%d/%Y", date),name,amount,category,owner from expenses 
+                where user_id = (?) and type = "spending"
+                order by date desc, name;
+                ''', (user_id,) 
+            )
+        except Exception as e:
+            print("Failed to get spending: {}".format(e))
+            raise BadRequest(e)
+            
+        result = c.fetchall()
+        c.close()
+        self.conn.commit()
+        return result
+
+
+    ########################################
+    ## Expense management                 ##
+    ########################################
+
+    def addexpense(self, username, request):
+        # validate that all required info is here
+        name = request.form['name'].capitalize()
+        amount = request.form['amount']
+        category = request.form['category'].lower()
+        type = "expense"
+        owner = request.form['owner']
+        if not owner:
+            owner = username
+        date = request.form['date']
+        if not date:
+            date = datetime.date.today().strftime("%Y-%m-%d")
+        
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
             c.execute("insert into expenses (name,amount,date,category,type,owner,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,type,owner,user_id))
         except Exception as e:
             print("Failed to add expense: {}".format(e))
@@ -152,4 +236,184 @@ class DB:
             
         c.close()
         self.conn.commit()
-        return '{"message":"new expense inserted"}'
+        return '{"message":"new spending inserted"}'
+
+    def myexpenses(self, username):
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            c.execute(
+                '''
+                select strftime("%m", date),name,amount as expected,category,owner from expenses 
+                where user_id = (?) and type = "expense"
+                order by date desc, name;
+                ''', (user_id,)
+            )
+        except Exception as e:
+            print("Failed to get expenses: {}".format(e))
+            raise BadRequest(e)
+            
+        result = c.fetchall()
+        c.close()
+        self.conn.commit()
+        return result
+
+
+    ########################################
+    ## Goal management                    ##
+    ########################################
+
+    def addgoal(self, username, request):
+        # validate that all required info is here
+        name = request.form['name']
+        target = request.form['target']
+        amount = request.form['amount']
+        owner = request.form['owner']
+        if not owner:
+            owner = username
+        date = request.form['date']
+        if not date:
+            date = datetime.date.today().strftime("%Y-%m-%d")
+        
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            c.execute("insert into goals (name,target,amount,target_date,owner,user_id) values (?,?,?,?,?,?)", (name,target,amount,date,owner,user_id))
+        except Exception as e:
+            print("Failed to add goal: {}".format(e))
+            raise BadRequest(e)
+            
+        c.close()
+        self.conn.commit()
+        return '{"message":"new goal inserted"}'
+
+    def mygoals(self, username):
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            c.execute(
+                '''
+                select strftime("%m/%d/%Y", target_date),name,target,amount,owner from goals 
+                where user_id = (?) 
+                order by target_date desc, name;
+                ''', (user_id,)
+            )
+        except Exception as e:
+            print("Failed to get goals: {}".format(e))
+            raise BadRequest(e)
+            
+        result = c.fetchall()
+        c.close()
+        self.conn.commit()
+        return result
+
+
+    ########################################
+    ## Debt management                    ##
+    ########################################
+
+    def adddebt(self, username, request):
+        # validate that all required info is here
+        name = request.form['name'].capitalize()
+        amount = request.form['amount']
+        owner = request.form['owner']
+        if not owner:
+            owner = username
+        date = request.form['date']
+        if not date:
+            date = datetime.date.today().strftime("%Y-%m-%d")
+        
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            c.execute("insert into debt (name,amount,target_date,owner,user_id) values (?,?,?,?,?)", (name,amount,date,owner,user_id))
+        except Exception as e:
+            print("Failed to add debt: {}".format(e))
+            raise BadRequest(e)
+            
+        c.close()
+        self.conn.commit()
+        return '{"message":"new debt inserted"}'
+    
+    def mydebt(self, username):
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            c.execute(
+                '''
+                select strftime("%m/%d/%Y", target_date),name,amount,owner from debt 
+                where user_id = (?)
+                order by target_date desc, name;
+                ''', (user_id,)
+            )
+        except Exception as e:
+            print("Failed to get debt: {}".format(e))
+            raise BadRequest(e)
+            
+        result = c.fetchall()
+        c.close()
+        self.conn.commit()
+        return result
+
+    ########################################
+    ## Income management                  ##
+    ########################################
+
+    def addincome(self, username, request):
+        # validate that all required info is here
+        name = request.form['name'].capitalize()
+        amount = request.form['amount']
+        owner = request.form['owner']
+        category = request.form['category'].lower()
+        type = request.form['type'].lower()
+        if not owner:
+            owner = username
+        date = request.form['date']
+        if not date:
+            date = datetime.date.today().strftime("%Y-%m-%d")
+        
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            c.execute("insert into income (name,amount,date,category,type,owner,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,type,owner,user_id))
+        except Exception as e:
+            print("Failed to add income: {}".format(e))
+            raise BadRequest(e)
+            
+        c.close()
+        self.conn.commit()
+        return '{"message":"new income inserted"}'
+    
+    def myincome(self, username):
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            c.execute(
+                '''
+                select strftime("%m/%d/%Y", date),name,amount,type,category,owner from income 
+                where user_id = (?)
+                order by date desc, name;
+                ''', (user_id,)
+            )
+        except Exception as e:
+            print("Failed to get income: {}".format(e))
+            raise BadRequest(e)
+            
+        result = c.fetchall()
+        c.close()
+        self.conn.commit()
+        return result

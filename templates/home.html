@@ -10,20 +10,57 @@
     {% else %}
         <h1>Welcome!</h1> 
     {% endif %}
-    {% if message %}
-        <div class="notify" style="color: aqua;" >{{message}}</div>
+    <button type="button" class="btn-add btn-addspending">Add spending</button>
+    <button type="button" class="btn-add btn-addexpense">Add expense</button>
+    <button type="button" class="btn-add btn-addgoal">Add goal</button>
+    <button type="button" class="btn-add btn-adddebt">Add debt</button>
+    <button type="button" class="btn-add btn-addincome">Add income</button>
+    <a href="/myspending">Show my spending</a>
+    <a href="/myexpenses">Show my monthly expenses</a>
+    <a href="/mygoals">Show my goals</a>
+    <a href="/mydebt">Show my debt</a>
+    <a href="/myincome">Show my income</a>
+    <div class="tablecontainer">
+    {% if rows %}
+        <table class="maintable">
+            <tr>
+                <th>Date</th>
+                <th>Name</th>
+                {% if type == "expenses" %}
+                    <th>Expense</th>
+                {% elif type == "goals" %}
+                    <th>Target</th>
+                    <th>Current</th>
+                {% else %}
+                    <th>Amount</th>
+                {% endif %}
+                <th>Category</th>
+                <th>Owner</th>
+            </tr>
+        {% for row in rows: %}
+            <tr>
+                <!-- Date -->
+                <td>{{row[0]}}</td>
+                <!-- Name -->
+                <td>{{row[1]}}</td>
+                {% if type == "goals" %}
+                    <!-- Target -->
+                    <td>${{row[2]}}</td>
+                    <!-- Current -->
+                    <td>${{row[3]}}</td>
+                    <!-- Owner -->
+                    <td>{{row[5]}}</td>
+                {% else %}
+                    <!-- Amount -->
+                    <td>${{row[2]}}</td>
+                    <!-- Category -->
+                    <td>{{row[3]}}</td>
+                    <!-- Owner -->
+                    <td>{{row[4]}}</td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        </table>
     {% endif %}
-    <form action="/addexpense" method="POST">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="e-name" placeholder="groceries">
-        <label for="amount">Amount</label>
-        <input type="number" id="amount" name="e-amount" min="1" step="any" placeholder="64.65">
-        <label for="category">Category</label>
-        <input type="text" id="category" name="e-category" placeholder="food (optional)">
-        <label for="owner">Owner</label>
-        <input type="text" id="owner" name="e-owner" placeholder="John (optional)">
-        <label for="date">Date</label>
-        <input type="date" id="date" name="e-date" placeholder="optional default is today's date">
-        <input type="submit" value="Submit">
-    </form>
+    </div>
 {% endblock %}

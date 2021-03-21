@@ -9,6 +9,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <link href="/static/styles.css" rel="stylesheet">
+    <script src="/static/jquery.min.js"></script>
+    <script src="/static/main.js"></script>
 
     <title> My Financial Tracker</title>
 
@@ -17,16 +19,16 @@
 <body>
     <div class="container">
         {% if newuser %}
-            <h1>Enter a username and password</h1>
+        <h1>Enter a username and password</h1>
         {% else %}
-            <h1>Please login</h1>
+        <h1>Please login</h1>
         {% endif %}
         <br>
         <form action="" method="post">
             <div>
                 <label for="username">Username:</label>
                 <input type="text" placeholder="Username" name="username" value="{{
-                      request.form.username }}">
+                      request.form.username }}" autofocus>
             </div>
             <div>
                 <label for="password">Password:</label>
@@ -41,12 +43,12 @@
         </form>
         {% if error %}
         <p class="error"><strong>Error:</strong> {{ error }}
-        {% endif %}
-        {% if not newuser %}
-        <a href="/newuser">Don't have an account? Register here!</a>
-        {% else %}
-        <a href="/login">Go back to login.</a>
-        {% endif %}
+            {% endif %}
+            {% if not newuser %}
+            <a href="/newuser">Don't have an account? Register here!</a>
+            {% else %}
+            <a href="/login">Go back to login.</a>
+            {% endif %}
     </div>
 </body>
 

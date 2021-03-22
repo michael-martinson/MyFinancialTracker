@@ -1,4 +1,5 @@
 import sqlite3
+import csv
 import hashlib
 import os
 from flask.cli import with_appcontext
@@ -92,6 +93,44 @@ class DB:
             self.conn.executescript(f.read())
         return '{"message":"created"}'
 
+    def import_csvdata(self, username, file, tablename):
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            with open(file,'r') as infile: 
+                # csv.DictReader uses first line in file for column headings by default
+                rows = csv.DictReader(infile) # comma is default delimiter
+                to_db = None
+                if tablename == "spending" or tablename == "expenses":
+                    to_db = [(row['name'],row['amount'],row['date'],row['category'],row['owner'], user_id) for row in rows]
+                elif tablename == "goals":
+                    to_db = [(row['name'],row['target'],row['amount'],row['target_date'],row['owner'], user_id) for row in rows]
+                elif tablename == "debt":
+                    to_db = [(row['name'],row['amount'],row['target_date'],row['owner'], user_id) for row in rows]
+                elif tablename == "income":
+                    to_db = [(row['name'],row['amount'],row['date'],row['category'],row['type'],row['type'],row['owner'], user_id) for row in rows]
+                else:
+                    raise Exception("need a valid tablename")
+        except Exception as e:
+            return BadRequest(e)
+
+        print(to_db)
+        whichtable = {
+            "spending":"insert into spending (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?)",
+            "expenses":"insert into expenses (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?)",
+            "goals":"insert into goals (name,target,amount,target_date,owner,user_id) values (?,?,?,?,?,?)",
+            "debt":"insert into debt (name,amount,target_date,owner,user_id) values (?,?,?,?,?)",
+            "income":"insert into income (name,amount,date,category,type,owner,user_id) values (?,?,?,?,?,?,?)"
+        }
+        try:
+            c.executemany(whichtable[tablename], to_db)
+        except:
+            raise BadRequest("make sure the data is formated correctly")
+        c.close()
+        self.conn.commit()
+        return '{"message":"data imported successfully"}'
+
 
     ########################################
     ## User management                    ##
@@ -133,7 +172,7 @@ class DB:
             c.execute("select * from users where username = (?)", (username,))
             record = c.fetchone()
             if not record:
-                print("No user with username {} exists: {}".format(username, e))
+                print("No user with username {} exists".format(username))
                 return False
         except Exception as e:
             print("sql error: {}".format(e))
@@ -161,7 +200,6 @@ class DB:
         name = request.form['name'].capitalize()
         amount = request.form['amount']
         category = request.form['category'].lower()
-        type = "spending"
         owner = request.form['owner']
         if not owner:
             owner = username
@@ -174,8 +212,7 @@ class DB:
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            print("inserting spending: ({}, {}, {}, {}, {}, {}, {})".format(name,amount,date,category,type,owner,user_id))
-            c.execute("insert into expenses (name,amount,date,category,type,owner,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,type,owner,user_id))
+            c.execute("insert into spending (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?)", (name,amount,date,category,owner,user_id))
         except Exception as e:
             print("Failed to add spending: {}".format(e))
             raise BadRequest(e)
@@ -192,8 +229,8 @@ class DB:
         try:
             c.execute(
                 '''
-                select strftime("%m/%d/%Y", date),name,amount,category,owner from expenses 
-                where user_id = (?) and type = "spending"
+                select strftime("%m/%d/%Y", date),name,amount,category,owner from spending 
+                where user_id = (?)
                 order by date desc, name;
                 ''', (user_id,) 
             )
@@ -216,7 +253,6 @@ class DB:
         name = request.form['name'].capitalize()
         amount = request.form['amount']
         category = request.form['category'].lower()
-        type = "expense"
         owner = request.form['owner']
         if not owner:
             owner = username
@@ -229,7 +265,7 @@ class DB:
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            c.execute("insert into expenses (name,amount,date,category,type,owner,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,type,owner,user_id))
+            c.execute("insert into expenses (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,owner,user_id))
         except Exception as e:
             print("Failed to add expense: {}".format(e))
             raise BadRequest(e)
@@ -247,7 +283,7 @@ class DB:
             c.execute(
                 '''
                 select strftime("%m", date),name,amount as expected,category,owner from expenses 
-                where user_id = (?) and type = "expense"
+                where user_id = (?)
                 order by date desc, name;
                 ''', (user_id,)
             )

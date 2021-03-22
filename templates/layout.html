@@ -17,7 +17,26 @@
 </head>
 
 <body>
-    <a href="/logout">Logout</a>
+    <nav class="thenav">
+        <a class="navlink" href="/myspending">
+            <div> My Spending </div>
+        </a>
+        <a class="navlink" href="/myexpenses">
+            <div> My Monthly Expenses </div>
+        </a>
+        <a class="navlink" href="/mygoals">
+            <div> My Goals </div>
+        </a>
+        <a class="navlink" href="/mydebt">
+            <div> My Debt </div>
+        </a>
+        <a class="navlink" href="/myincome">
+            <div> My Income </div>
+        </a>
+        <a class="navlink" href="/logout">
+            <div class="logout"> Logout </div>
+        </a>
+    </nav>
     {% if message %}
     <div class="notify" style="color: aqua;">{{message}}</div>
     {% endif %}

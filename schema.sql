@@ -1,7 +1,10 @@
 -- Clear any existing tables
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS income;
+DROP TABLE IF EXISTS debt;
 DROP TABLE IF EXISTS goals;
+DROP TABLE IF EXISTS spending;
 DROP TABLE IF EXISTS expenses;
+DROP TABLE IF EXISTS users;
 
 -- Creating new tables
 CREATE TABLE users (
@@ -19,13 +22,26 @@ CREATE TABLE expenses (
     amount MONEY NOT NULL,
     date DATE not NULL,
     category varchar(50),
-    type varchar(10) NOT NULL,
+    owner varchar(50),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    user_id INT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(user_id)
+);
+
+CREATE TABLE spending (
+    spending_id INTEGER PRIMARY KEY,
+    name varchar(100) NOT NULL,
+    amount MONEY NOT NULL,
+    date DATE not NULL,
+    category varchar(50),
     owner varchar(50),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     goal_id INT,
+    expense_id INT,
     FOREIGN KEY(user_id) REFERENCES users(user_id),
-    FOREIGN KEY(goal_id) REFERENCES goals(goal_id)
+    FOREIGN KEY(goal_id) REFERENCES goals(goal_id),
+    FOREIGN KEY(expense_id) REFERENCES expenses(expense_id)
 );
 
 CREATE TABLE goals (
@@ -62,4 +78,4 @@ CREATE TABLE income (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(user_id)
-)
+);

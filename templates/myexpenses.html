@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block main %}
+<h1>My Expenses</h1>
+<div class="add-buttons">
+    <button type="button" class="btn btn-add btn-addexpense">Add expense</button>
+    <button type="button" class="btn btn-add btn-import">Import CSV file</button>
+</div
+
+<div class="tablecontainer">
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Name</th>
+            <th>Expected</th>
+            <th>Category</th>
+            <th>Owner</th>
+        </tr>
+        {% if rows %}
+        {% for row in rows: %}
+        <tr>
+            <!-- Date -->
+            <td>{{row[0]}}</td>
+            <!-- Name -->
+            <td>{{row[1]}}</td>
+            <!-- Expected -->
+            <td>${{row[2]}}</td>
+            <!-- Category -->
+            <td>{{row[3]}}</td>
+            <!-- Owner -->
+            <td>{{row[4]}}</td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+    </table>
+</div>
+{% endblock %}

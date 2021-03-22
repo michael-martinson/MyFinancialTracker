@@ -25,13 +25,19 @@ $(document).ready(function () {
         { html: form_addincome, type: "addincome" },
         append_form,
     ) 
+    $(".btn-import").on(
+        "click",
+        { html: form_import, type: "import" },
+        append_form,
+    )
 });
 
 
 function append_form(params) {
+    console.log("appending a form")
     ftype = params.data.type;
     $(".btn-add").attr("disabled", true);
-    $(".tablecontainer").prepend(params.data.html);
+    $(".add-buttons").after(params.data.html);
     $(`.form-${ftype} #name`).focus();
     $(`.cancel-${ftype}`).on("click", function() {
         $(".btn-add").attr("disabled", false);
@@ -40,15 +46,33 @@ function append_form(params) {
 
 }
 
+let form_import = `
+    <form class="form-add form-import" action="/importcsv" method="POST">
+        <div class="form-input-container">
+        <label for="file">File</label>
+        <input type="file" id="file" name="csvfile" required>
+        </div>
+        <div class="form-input-container">
+            <select name="tablename" required>
+                <option value="spending">Import Spending Data</option>
+                <option value="expenses">Import Expense Data</option>
+                <option value="goals">Import Goal Data</option>
+                <option value="debt">Import Debt Data</option>
+                <option value="income">Import Income Data</option>
+            </select>
+        </div>
+        <input class="submit-import" type="submit" value="Submit">
+        <button class="cancel-import">Cancel</button>
+    </form>
+`
+
 let form_addspending = `
     <form class="form-add form-addspending" action="/addspending" method="POST">
         <div class="form-input-container">
             <label for="name">Name</label>
             <input type="text" id="name" name="name" placeholder="groceries" required>
-        </div>
-        <div class="form-input-container">
-        <label for="amount">Amount</label>
-        <input type="number" id="amount" name="amount" min="1" step="any" placeholder="64.65" required>
+            <label for="amount">Amount</label>
+            <input type="number" id="amount" name="amount" min="1" step="any" placeholder="64.65" required>
         </div>
 
         <div class="form-input-container">
@@ -56,19 +80,17 @@ let form_addspending = `
         </div>
 
         <div class="form-input-container">
-        <label for="category">Category</label>
-        <input type="text" id="category" name="category" placeholder="food (optional)">
+            <label for="category">Category</label>
+            <input type="text" id="category" name="category" placeholder="food (optional)">
+            <label for="owner">Owner</label>
+            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" placeholder="optional default is today's date">
         </div>
-        <div class="form-input-container">
-        <label for="owner">Owner</label>
-        <input type="text" id="owner" name="owner" placeholder="John (optional)">
+        <div class="form-input-buttons">
+            <input class="btn submit-addspending" type="submit" value="Submit">
+            <button class="btn cancel-addspending">Cancel</button>
         </div>
-        <div class="form-input-container">
-        <label for="date">Date</label>
-        <input type="date" id="date" name="date" placeholder="optional default is today's date">
-        </div>
-        <input class="submit-addspending" type="submit" value="Submit">
-        <button class="cancel-addspending">Cancel</button>
     </form>
 `
 

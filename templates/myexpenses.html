@@ -1,18 +1,13 @@
-{% extends "layout.html" %}
+{% extends "layout-MF.html" %}
 
 {% block main %}
-<h1>My Expenses</h1>
-<div class="add-buttons">
-    <button type="button" class="btn btn-add btn-addexpense">Add expense</button>
-    <button type="button" class="btn btn-add btn-import">Import CSV file</button>
-</div
-
 <div class="tablecontainer">
     <table>
         <tr>
             <th>Date</th>
             <th>Name</th>
             <th>Expected</th>
+            <th>Spent</th>
             <th>Category</th>
             <th>Owner</th>
         </tr>
@@ -25,6 +20,8 @@
             <td>{{row[1]}}</td>
             <!-- Expected -->
             <td>${{row[2]}}</td>
+            <!-- Spent -->
+            <td>$0</td>
             <!-- Category -->
             <td>{{row[3]}}</td>
             <!-- Owner -->

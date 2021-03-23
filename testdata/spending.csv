@@ -1,0 +1,5 @@
+name,amount,date,expense_name,category,owner
+groceries,200,2021-03-10,groceries,food,john
+gas,100,2021-03-13,gas,travel,Sarah
+in and out,8,2021-03-12,,food,John
+rent,691,2021-03-18,rent,,Sarah

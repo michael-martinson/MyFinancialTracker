@@ -98,34 +98,38 @@ class DB:
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            with open(file,'r') as infile: 
-                # csv.DictReader uses first line in file for column headings by default
-                rows = csv.DictReader(infile) # comma is default delimiter
-                to_db = None
-                if tablename == "spending" or tablename == "expenses":
-                    to_db = [(row['name'],row['amount'],row['date'],row['category'],row['owner'], user_id) for row in rows]
-                elif tablename == "goals":
-                    to_db = [(row['name'],row['target'],row['amount'],row['target_date'],row['owner'], user_id) for row in rows]
-                elif tablename == "debt":
-                    to_db = [(row['name'],row['amount'],row['target_date'],row['owner'], user_id) for row in rows]
-                elif tablename == "income":
-                    to_db = [(row['name'],row['amount'],row['date'],row['category'],row['type'],row['type'],row['owner'], user_id) for row in rows]
-                else:
-                    raise Exception("need a valid tablename")
+            # csv.DictReader uses first line in file for column headings by default
+            rows = csv.DictReader(file.read().decode().splitlines()) # comma is default delimiter
+            to_db = None
+            print("table", tablename)
+            if tablename == "spending":
+                to_db = [(row['name'].strip().capitalize(),row['amount'].strip(),row['date'].strip(),row['category'].strip().lower(),row['owner'].strip().capitalize(),row['expense_name'].strip().capitalize(), user_id) for row in rows]
+            elif tablename == "expenses":
+                to_db = [(row['name'].strip().capitalize(),row['amount'].strip(),row['date'].strip(),row['category'].strip().lower(),row['owner'].strip().capitalize(), user_id) for row in rows]
+            elif tablename == "goals":
+                to_db = [(row['name'].strip().capitalize(),row['target'].strip(),row['amount'].strip(),row['target_date'].strip(),row['owner'].strip().capitalize(), user_id) for row in rows]
+            elif tablename == "debt":
+                to_db = [(row['name'].strip().capitalize(),row['amount'].strip(),row['target_date'].strip(),row['owner'].strip().capitalize(), user_id) for row in rows]
+            elif tablename == "income":
+                to_db = [(row['name'].strip().capitalize(),row['amount'].strip(),row['date'].strip(),row['type'].strip(),row['owner'].strip().capitalize(), user_id) for row in rows]
+            else:
+                raise Exception("need a valid tablename")
         except Exception as e:
+            print("csv import failed: {}".format(e))
             return BadRequest(e)
 
         print(to_db)
         whichtable = {
-            "spending":"insert into spending (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?)",
+            "spending":"insert into spending (name,amount,date,category,owner,expense_name,user_id) values (?,?,?,?,?,?,?)",
             "expenses":"insert into expenses (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?)",
             "goals":"insert into goals (name,target,amount,target_date,owner,user_id) values (?,?,?,?,?,?)",
             "debt":"insert into debt (name,amount,target_date,owner,user_id) values (?,?,?,?,?)",
-            "income":"insert into income (name,amount,date,category,type,owner,user_id) values (?,?,?,?,?,?,?)"
+            "income":"insert into income (name,amount,date,type,owner,user_id) values (?,?,?,?,?,?)"
         }
         try:
             c.executemany(whichtable[tablename], to_db)
-        except:
+        except Exception as e:
+            print("csv import failed: {}".format(e))
             raise BadRequest("make sure the data is formated correctly")
         c.close()
         self.conn.commit()
@@ -199,6 +203,7 @@ class DB:
         # validate that all required info is here
         name = request.form['name'].capitalize()
         amount = request.form['amount']
+        expensename = request.form['linkedExpense'].capitalize()
         category = request.form['category'].lower()
         owner = request.form['owner']
         if not owner:
@@ -207,12 +212,14 @@ class DB:
         if not date:
             date = datetime.date.today().strftime("%Y-%m-%d")
         
-        # get active user
         c = self.conn.cursor()
+        # get active user
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        # get linked expense id
+        expense_name = c.execute("select name from expenses where name = (?)", (expensename,)).fetchone()[0]
 
         try:
-            c.execute("insert into spending (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?)", (name,amount,date,category,owner,user_id))
+            c.execute("insert into spending (name,amount,date,category,owner,expense_name,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,owner,expense_name,user_id))
         except Exception as e:
             print("Failed to add spending: {}".format(e))
             raise BadRequest(e)
@@ -229,7 +236,7 @@ class DB:
         try:
             c.execute(
                 '''
-                select strftime("%m/%d/%Y", date),name,amount,category,owner from spending 
+                select strftime("%m/%d/%Y", date),name,amount,expense_name,category,owner from spending 
                 where user_id = (?)
                 order by date desc, name;
                 ''', (user_id,) 
@@ -264,8 +271,14 @@ class DB:
         c = self.conn.cursor()
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
+        # enforce unique usernames
+        c.execute("select * from expenses where name = (?)", (name,))
+        record = c.fetchone()
+        if record:
+            print("The expense name {} already exists".format(name))
+            raise UsernameAlreadyExists("Expense name already exists")
         try:
-            c.execute("insert into expenses (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,owner,user_id))
+            c.execute("insert into expenses (name,amount,date,category,owner,user_id) values (?,?,?,?,?,?)", (name,amount,date,category,owner,user_id))
         except Exception as e:
             print("Failed to add expense: {}".format(e))
             raise BadRequest(e)
@@ -310,8 +323,6 @@ class DB:
         if not owner:
             owner = username
         date = request.form['date']
-        if not date:
-            date = datetime.date.today().strftime("%Y-%m-%d")
         
         # get active user
         c = self.conn.cursor()
@@ -362,8 +373,6 @@ class DB:
         if not owner:
             owner = username
         date = request.form['date']
-        if not date:
-            date = datetime.date.today().strftime("%Y-%m-%d")
         
         # get active user
         c = self.conn.cursor()
@@ -410,7 +419,6 @@ class DB:
         name = request.form['name'].capitalize()
         amount = request.form['amount']
         owner = request.form['owner']
-        category = request.form['category'].lower()
         type = request.form['type'].lower()
         if not owner:
             owner = username
@@ -423,7 +431,7 @@ class DB:
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            c.execute("insert into income (name,amount,date,category,type,owner,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,type,owner,user_id))
+            c.execute("insert into income (name,amount,date,type,owner,user_id) values (?,?,?,?,?,?)", (name,amount,date,type,owner,user_id))
         except Exception as e:
             print("Failed to add income: {}".format(e))
             raise BadRequest(e)
@@ -440,7 +448,7 @@ class DB:
         try:
             c.execute(
                 '''
-                select strftime("%m/%d/%Y", date),name,amount,type,category,owner from income 
+                select strftime("%m/%d/%Y", date),name,amount,type,owner from income 
                 where user_id = (?)
                 order by date desc, name;
                 ''', (user_id,)

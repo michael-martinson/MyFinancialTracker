@@ -36,23 +36,22 @@ $(document).ready(function () {
 function append_form(params) {
     console.log("appending a form")
     ftype = params.data.type;
-    $(".btn-add").attr("disabled", true);
+    $(".btn-form").attr("disabled", true);
     $(".add-buttons").after(params.data.html);
     $(`.form-${ftype} #name`).focus();
     $(`.cancel-${ftype}`).on("click", function() {
-        $(".btn-add").attr("disabled", false);
+        $(".btn-form").attr("disabled", false);
         $(`.form-${ftype}`).remove();
     });
 
 }
 
 let form_import = `
-    <form class="form-add form-import" action="/importcsv" method="POST">
+    <form class="form-add form-import" action="/importcsv" method="POST" enctype="multipart/form-data">
         <div class="form-input-container">
-        <label for="file">File</label>
-        <input type="file" id="file" name="csvfile" required>
+            <input type="file" id="csvfile" name="csvfile" required>
         </div>
-        <div class="form-input-container">
+        <div class="form-input-container csvtableselect">
             <select name="tablename" required>
                 <option value="spending">Import Spending Data</option>
                 <option value="expenses">Import Expense Data</option>
@@ -61,8 +60,10 @@ let form_import = `
                 <option value="income">Import Income Data</option>
             </select>
         </div>
-        <input class="submit-import" type="submit" value="Submit">
-        <button class="cancel-import">Cancel</button>
+        <div class="form-input-buttons">
+        <input class="btn submit-import" type="submit" value="Submit">
+        <button class="btn cancel-import">Cancel</button>
+        </div>
     </form>
 `
 
@@ -74,12 +75,10 @@ let form_addspending = `
             <label for="amount">Amount</label>
             <input type="number" id="amount" name="amount" min="1" step="any" placeholder="64.65" required>
         </div>
-
         <div class="form-input-container">
             Optional
-        </div>
-
-        <div class="form-input-container">
+            <label for="linkedExpense">Linked Expense</label>
+            <input type="text" id="linkedExpense" name="linkedExpense" placeholder="groceries (optional)">
             <label for="category">Category</label>
             <input type="text" id="category" name="category" placeholder="food (optional)">
             <label for="owner">Owner</label>
@@ -104,25 +103,19 @@ let form_addexpense = `
         <label for="amount">Amount</label>
         <input type="number" id="amount" name="amount" min="1" step="any" placeholder="64.65" required>
         </div>
-
         <div class="form-input-container">
             Optional
+            <label for="category">Category</label>
+            <input type="text" id="category" name="category" placeholder="food (optional)">
+            <label for="owner">Owner</label>
+            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" placeholder="optional default is today's date">
         </div>
-
-        <div class="form-input-container">
-        <label for="category">Category</label>
-        <input type="text" id="category" name="category" placeholder="food (optional)">
+        <div class="form-input-buttons">
+        <input class="btn submit-addexpense" type="submit" value="Submit">
+        <button class="btn cancel-addexpense">Cancel</button>
         </div>
-        <div class="form-input-container">
-        <label for="owner">Owner</label>
-        <input type="text" id="owner" name="owner" placeholder="John (optional)">
-        </div>
-        <div class="form-input-container">
-        <label for="date">Date</label>
-        <input type="date" id="date" name="date" placeholder="optional default is today's date">
-        </div>
-        <input class="submit-addexpense" type="submit" value="Submit">
-        <button class="cancel-addexpense">Cancel</button>
     </form>
 `
 
@@ -140,17 +133,15 @@ let form_addgoal = `
 
         <div class="form-input-container">
             Optional
+            <label for="owner">Owner</label>
+            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <label for="date">When do you goal it?</label>
+            <input type="date" id="date" name="date">
         </div>
-        <div class="form-input-container">
-        <label for="owner">Owner</label>
-        <input type="text" id="owner" name="owner" placeholder="John (optional)">
+        <div class="form-input-buttons">
+        <input class="btn submit-addgoal" type="submit" value="Submit">
+        <button class="btn cancel-addgoal">Cancel</button>
         </div>
-        <div class="form-input-container">
-        <label for="date">When do you goal it?</label>
-        <input type="date" id="date" name="date">
-        </div>
-        <input class="submit-addgoal" type="submit" value="Submit">
-        <button class="cancel-addgoal">Cancel</button>
     </form>
 `
 let form_adddebt = `
@@ -163,20 +154,17 @@ let form_adddebt = `
         <label for="amount">Amount</label>
         <input type="number" id="amount" name="amount" min="1" step="any" placeholder="100" required>
         </div>
-
         <div class="form-input-container">
             Optional
+            <label for="owner">Owner</label>
+            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <label for="date">When do you goal it payed off?</label>
+            <input type="date" id="date" name="date">
         </div>
-        <div class="form-input-container">
-        <label for="owner">Owner</label>
-        <input type="text" id="owner" name="owner" placeholder="John (optional)">
+        <div class="form-input-buttons">
+        <input class="btn submit-adddebt" type="submit" value="Submit">
+        <button class="btn cancel-adddebt">Cancel</button>
         </div>
-        <div class="form-input-container">
-        <label for="date">When do you goal it payed off?</label>
-        <input type="date" id="date" name="date">
-        </div>
-        <input class="submit-adddebt" type="submit" value="Submit">
-        <button class="cancel-adddebt">Cancel</button>
     </form>
 `
 
@@ -197,20 +185,16 @@ let form_addincome = `
 
         <div class="form-input-container">
             Optional
+            <label for="category">Category</label>
+            <input type="text" id="category" name="category" placeholder="food (optional)">
+            <label for="owner">Owner</label>
+            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date">
         </div>
-        <div class="form-input-container">
-        <label for="category">Category</label>
-        <input type="text" id="category" name="category" placeholder="food (optional)">
+        <div class="form-input-buttons">
+            <input class="btn submit-addincome" type="submit" value="Submit">
+            <button class="btn cancel-addincome">Cancel</button>
         </div>
-        <div class="form-input-container">
-        <label for="owner">Owner</label>
-        <input type="text" id="owner" name="owner" placeholder="John (optional)">
-        </div>
-        <div class="form-input-container">
-        <label for="date">Date</label>
-        <input type="date" id="date" name="date">
-        </div>
-        <input class="submit-addincome" type="submit" value="Submit">
-        <button class="cancel-addincome">Cancel</button>
     </form>
 `

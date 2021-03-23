@@ -17,38 +17,35 @@
 </head>
 
 <body>
-    <div class="container">
-        {% if newuser %}
-        <h1>Enter a username and password</h1>
-        {% else %}
-        <h1>Please login</h1>
-        {% endif %}
-        <br>
-        <form action="" method="post">
-            <div>
-                <label for="username">Username:</label>
-                <input type="text" placeholder="Username" name="username" value="{{
-                      request.form.username }}" autofocus>
-            </div>
-            <div>
-                <label for="password">Password:</label>
-                <input type="password" placeholder="Password" name="password" value="{{
-                      request.form.password }}">
-            </div>
+    <div class="loginpage">
+        <h1>My Financials</h1>
+        <div class="login-container">
             {% if newuser %}
-            <input class="btn btn-submit" type="submit" value="Register">
+            <h1>Sign up</h1>
             {% else %}
-            <input class="btn btn-submit" type="submit" value="Login">
+            <h1>Login</h1>
             {% endif %}
-        </form>
-        {% if error %}
-        <p class="error"><strong>Error:</strong> {{ error }}
+ 
+            <form class="form-login" action="" method="post">
+                <input type="text" placeholder="Username" name="username" value="{{
+                            request.form.username }}" autofocus required>
+                <input type="password" placeholder="Password" name="password" value="{{
+                            request.form.password }}" required>
+                {% if newuser %}
+                <input class="btn btn-submit" type="submit" value="Register">
+                {% else %}
+                <input class="btn btn-submit" type="submit" value="Login">
+                {% endif %}
+            </form>
+            {% if error %}
+            <div class="error"><strong>Error:</strong> {{ error }} </div>
             {% endif %}
             {% if not newuser %}
             <a href="/newuser">Don't have an account? Register here!</a>
             {% else %}
             <a href="/login">Go back to login.</a>
             {% endif %}
+        </div>
     </div>
 </body>
 

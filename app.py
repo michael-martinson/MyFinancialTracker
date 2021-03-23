@@ -36,7 +36,7 @@ def home(message = None):
         print(myexpenses)
     except BadRequest as e:
         app.logger.error(f"{e}")
-    return render_template("myexpenses.html", rows=myexpenses, message=message, user=escape(session['username']))
+    return render_template("myexpenses.html", rows=myexpenses, table="expenses", message=message, username=escape(session['username']))
 
 ########################################
 ## login endpoints                    ##
@@ -121,7 +121,7 @@ def myspending():
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("myspending.html", rows=myspending, message=message)
+    return render_template("myspending.html", rows=myspending, table="spending", message=message, username=session['username'])
 
 
 ########################################
@@ -154,7 +154,7 @@ def myexpenses():
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("myexpenses.html", rows=myexpenses, message=message)
+    return render_template("myexpenses.html", rows=myexpenses, table="expenses", message=message, username=session['username'])
 
 
 ########################################
@@ -187,7 +187,7 @@ def mygoals():
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("mygoals.html", rows=mygoals, message=message)
+    return render_template("mygoals.html", rows=mygoals, table="goals", message=message, username=session['username'])
 
 
 ########################################
@@ -220,7 +220,7 @@ def mydebt():
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("mydebt.html", rows=mydebt, message=message)
+    return render_template("mydebt.html", rows=mydebt, table="debt", message=message, username=session['username'])
 
 
 ########################################
@@ -253,7 +253,7 @@ def myincome():
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("myincome.html", rows=myincome, message=message)
+    return render_template("myincome.html", rows=myincome, table="income", message=message, username=session['username'])
 
 
 ########################################
@@ -271,7 +271,7 @@ def importcsv():
     db = DB(get_db())
     message = None
     try:
-        db.import_csvdata(session['username'], request.form['csvfile'], request.form['tablename'])
+        db.import_csvdata(session['username'], request.files['csvfile'], request.form['tablename'])
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"

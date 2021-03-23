@@ -1,18 +1,13 @@
-{% extends "layout.html" %}
+{% extends "layout-MF.html" %}
 
 {% block main %}
-<h1>My Spending</h1>
-<div class="add-buttons">
-    <button type="button" class="btn btn-add btn-addspending">Add spending</button>
-    <button type="button" class="btn btn-add btn-import">Import CSV file</button>
-</div>
-
 <div class="tablecontainer">
     <table class="maintable">
         <tr>
             <th>Date</th>
             <th>Name</th>
             <th>Amount</th>
+            <th>Linked Expense</th>
             <th>Category</th>
             <th>Owner</th>
         </tr>
@@ -25,10 +20,12 @@
             <td>{{row[1]}}</td>
             <!-- Amount -->
             <td>${{row[2]}}</td>
-            <!-- Category -->
+            <!-- Linked Expense -->
             <td>{{row[3]}}</td>
-            <!-- Owner -->
+            <!-- Category -->
             <td>{{row[4]}}</td>
+            <!-- Owner -->
+            <td>{{row[5]}}</td>
         </tr>
         {% endfor %}
         {% endif %}

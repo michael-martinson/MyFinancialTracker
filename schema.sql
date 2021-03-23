@@ -34,14 +34,14 @@ CREATE TABLE spending (
     amount MONEY NOT NULL,
     date DATE not NULL,
     category varchar(50),
+    expense_name varchar(50),
     owner varchar(50),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     goal_id INT,
-    expense_id INT,
     FOREIGN KEY(user_id) REFERENCES users(user_id),
     FOREIGN KEY(goal_id) REFERENCES goals(goal_id),
-    FOREIGN KEY(expense_id) REFERENCES expenses(expense_id)
+    FOREIGN KEY(expense_name) REFERENCES expenses(name)
 );
 
 CREATE TABLE goals (
@@ -72,7 +72,6 @@ CREATE TABLE income (
     name varchar(100) NOT NULL,
     amount MONEY NOT NULL,
     date DATE NOT NULL,
-    category varchar(50),
     type varchar(10) NOT NULL,
     owner varchar(50),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

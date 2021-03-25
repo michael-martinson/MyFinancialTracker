@@ -12,17 +12,16 @@ CREATE TABLE users (
     username varchar(25) NOT NULL,
     password char(64) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES goals(user_id),
-    FOREIGN KEY(user_id) REFERENCES expenses(user_id)
+    FOREIGN KEY(user_id) REFERENCES goals(user_id), FOREIGN KEY(user_id) REFERENCES expenses(user_id)
 );
 
 CREATE TABLE expenses (
     expense_id INTEGER PRIMARY KEY,
     name varchar(100) NOT NULL,
-    amount MONEY NOT NULL,
-    date DATE not NULL,
-    category varchar(50),
-    owner varchar(50),
+    expected MONEY NOT NULL,
+    due_date DATE NOT NULL,
+    repeat_type varchar(25) NOT NULL,
+    owner varchar(25),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(user_id)

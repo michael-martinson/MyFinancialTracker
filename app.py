@@ -10,6 +10,7 @@ from flask import (
     Response,
 ) 
 import sqlite3
+import json
 from markupsafe import escape
 import secrets
 from db import (DB, BadRequest, KeyNotFound, UsernameAlreadyExists)
@@ -116,12 +117,19 @@ def myspending():
     message = None
     myspending = None
     try:
-        myspending = db.myspending(session['username'])
+        (myspending, total) = db.myspending(session['username'])
         print(myspending)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("myspending.html", rows=myspending, table="spending", message=message, username=session['username'])
+    return render_template(
+        "myspending.html", 
+        rows=myspending, 
+        total=total, 
+        table="spending", 
+        message=message, 
+        username=session['username']
+    ) 
 
 
 ########################################
@@ -257,8 +265,23 @@ def myincome():
 
 
 ########################################
-## Combination endpoints              ##
+## Delete endpoints                   ##
 ########################################
+
+@app.route('/deleterow', methods=['POST'])
+def deleterow():
+    if not check_logged_in():
+        return redirect(url_for('login'))
+    db = DB(get_db())
+    message = "row deleted successfully"
+    try:
+        data = json.loads(request.data.decode())
+        print(data)
+        db.delete_record(session['username'], data['tablename'], data['rid'])
+    except BadRequest as e:
+        app.logger.error(f"{e}")
+        message = "Something went wrong. Please try again"
+    return redirect(url_for("my{}".format(data['tablename']), message=message))
 
 
 ########################################

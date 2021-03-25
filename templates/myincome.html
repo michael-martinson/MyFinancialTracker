@@ -13,16 +13,18 @@
         {% if rows %}
         {% for row in rows: %}
         <tr class="tr-data">
+            <!-- ID -->
+            <td class="rid" style="display: none;">{{row[0]}}</td>
             <!-- Date -->
-            <td>{{row[0]}}</td>
-            <!-- Name -->
             <td>{{row[1]}}</td>
+            <!-- Name -->
+            <td>{{row[2]}}</td>
             <!-- Amount -->
-            <td>${{row[2]}}</td>
+            <td>${{row[3]}}</td>
             <!-- Type -->
-            <td>{{row[3]}}</td>
-            <!-- Owner -->
             <td>{{row[4]}}</td>
+            <!-- Owner -->
+            <td>{{row[5]}}</td>
         </tr>
         {% endfor %}
         {% endif %}

@@ -3,7 +3,7 @@
 {% block main %}
 <div class="tablecontainer">
     <table class="maintable">
-        <tr>
+        <tr class="tr-headers">
             <th>Date</th>
             <th>Name</th>
             <th>Amount</th>
@@ -13,21 +13,33 @@
         </tr>
         {% if rows %}
         {% for row in rows: %}
-        <tr>
+        <tr class="tr-data">
+            <!-- ID -->
+            <td class="rid" style="display: none;">{{row[0]}}</td>
             <!-- Date -->
-            <td>{{row[0]}}</td>
-            <!-- Name -->
             <td>{{row[1]}}</td>
+            <!-- Name -->
+            <td>{{row[2]}}</td>
             <!-- Amount -->
-            <td>${{row[2]}}</td>
+            <td>${{row[3]}}</td>
             <!-- Linked Expense -->
-            <td>{{row[3]}}</td>
-            <!-- Category -->
             <td>{{row[4]}}</td>
-            <!-- Owner -->
+            <!-- Category -->
             <td>{{row[5]}}</td>
+            <!-- Owner -->
+            <td>{{row[6]}}</td>
         </tr>
         {% endfor %}
+        {% if total %}
+        <tr class="tr-total">
+            <td>Total:</td>
+            <td></td>
+            <td>${{total}}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+        {% endif %}
         {% endif %}
     </table>
 </div>

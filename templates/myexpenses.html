@@ -3,29 +3,31 @@
 {% block main %}
 <div class="tablecontainer">
     <table>
-        <tr>
-            <th>Date</th>
+        <tr class="tr-headers">
+            <th>Due Date</th>
             <th>Name</th>
             <th>Expected</th>
             <th>Spent</th>
-            <th>Category</th>
+            <th>Repeats</th>
             <th>Owner</th>
         </tr>
         {% if rows %}
         {% for row in rows: %}
-        <tr>
+        <tr class="tr-data">
+            <!-- ID -->
+            <td class="rid" style="display: none;">{{row[0]}}</td>
             <!-- Date -->
-            <td>{{row[0]}}</td>
-            <!-- Name -->
             <td>{{row[1]}}</td>
+            <!-- Name -->
+            <td>{{row[2]}}</td>
             <!-- Expected -->
-            <td>${{row[2]}}</td>
+            <td>${{row[3]}}</td>
             <!-- Spent -->
             <td>$0</td>
-            <!-- Category -->
-            <td>{{row[3]}}</td>
-            <!-- Owner -->
+            <!-- Repeats -->
             <td>{{row[4]}}</td>
+            <!-- Owner -->
+            <td>{{row[5]}}</td>
         </tr>
         {% endfor %}
         {% endif %}

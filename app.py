@@ -29,15 +29,7 @@ app.secret_key = secrets.token_urlsafe(50)
 def home(message = None):
     if not check_logged_in():
         return redirect(url_for('login'))
-    app.logger.debug('Logged in as {} with message {}'.format(escape(session['username']), message))
-    db = DB(get_db())
-    myexpenses = None
-    try:
-        myexpenses = db.myexpenses(session['username'])
-        print(myexpenses)
-    except BadRequest as e:
-        app.logger.error(f"{e}")
-    return render_template("myexpenses.html", rows=myexpenses, table="expenses", message=message, username=escape(session['username']))
+    return redirect(url_for('myexpenses'))
 
 ########################################
 ## login endpoints                    ##
@@ -156,13 +148,23 @@ def myexpenses():
     db = DB(get_db())
     message = None
     myexpenses = None
+    etot = None
+    stot = None
     try:
-        myexpenses = db.myexpenses(session['username'])
-        print(myexpenses)
+        (myexpenses,etot,stot) = db.myexpenses(session['username'])
+        print(myexpenses, etot, stot)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("myexpenses.html", rows=myexpenses, table="expenses", message=message, username=session['username'])
+    return render_template(
+        "myexpenses.html", 
+        rows=myexpenses,
+        etotal=etot,
+        stotal=stot,
+        table="expenses",
+        message=message,
+        username=session['username']
+    ) 
 
 
 ########################################

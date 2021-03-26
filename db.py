@@ -236,16 +236,16 @@ class DB:
         owner = request.form['owner']
         if not owner:
             owner = username
-        date = request.form['date']
-        if not date:
-            date = date.today().strftime("%Y-%m-%d")
+        sdate = request.form['date']
+        if not sdate:
+            sdate = date.today().strftime("%Y-%m-%d")
         
         c = self.conn.cursor()
         # get active user
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            c.execute("insert into spending (name,amount,date,category,owner,expense_name,user_id) values (?,?,?,?,?,?,?)", (name,amount,date,category,owner,expensename,user_id))
+            c.execute("insert into spending (name,amount,date,category,owner,expense_name,user_id) values (?,?,?,?,?,?,?)", (name,amount,sdate,category,owner,expensename,user_id))
         except Exception as e:
             print("Failed to add spending: {}".format(e))
             raise BadRequest(e)
@@ -277,7 +277,7 @@ class DB:
         result = c.fetchall()
         c.close()
         self.conn.commit()
-        return (result,  total)
+        return (result, total)
 
 
     ########################################
@@ -292,17 +292,17 @@ class DB:
         owner = request.form['owner'].capitalize()
         if not owner:
             owner = username
-        date = request.form['date']
-        if not date:
-            date = date.today().strftime("%Y-%m-%d")
+        edate = request.form['date']
+        if not edate:
+            edate = date.today().strftime("%Y-%m-%d")
         
         # get active user
         c = self.conn.cursor()
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            print((name,expected,date,repeat_type,owner,user_id))
-            self.insert_expense((name,expected,date,repeat_type,owner,user_id))
+            print((name,expected,edate,repeat_type,owner,user_id))
+            self.insert_expense((name,expected,edate,repeat_type,owner,user_id))
         except Exception as e:
             raise BadRequest(e)
             
@@ -323,6 +323,12 @@ class DB:
             last_month = date(today.year, today.month-1, 1)
 
         try:
+            c.execute("select sum(expected) from expenses where user_id = (?)", (user_id,))
+            etotal = c.fetchone()[0]
+            c.execute("select sum(amount) from spending where user_id = (?) and expense_name is not null", (user_id,))
+            stotal = c.fetchone()[0]
+            if not stotal:
+                stotal = 0
             c.execute(
                 '''
                 select expense_id,strftime("%m/%d/%Y", due_date),name,expected,repeat_type,owner from expenses 
@@ -330,16 +336,28 @@ class DB:
                 order by due_date asc, name;
                 ''', (user_id,last_month.strftime("%Y-%m-%d"))
             )
+            expenses = self.expense_repeats(today, c.fetchall())
+            result = []
+            for e in expenses:
+                c.execute("select sum(amount) from spending where user_id = (?) and expense_name = (?)", (user_id,e[2]))
+                tot = c.fetchone()[0]
+                if not tot:
+                    tot = 0
+                c.execute(
+                    '''
+                    select spending_id,strftime("%m/%d/%Y", date),name,amount,expense_name,category,owner from spending 
+                    where user_id = (?) and expense_name = (?)
+                    order by date desc, name;
+                    ''', (user_id, e[2])
+                )
+                result += [(e, tot, c.fetchall())]
         except Exception as e:
             print("Failed to get expenses: {}".format(e))
             raise BadRequest(e)
-            
-        results = c.fetchall()
-        output = self.expense_repeats(today, results)
 
         c.close()
         self.conn.commit()
-        return output
+        return (result, etotal, stotal)
 
     def insert_expense(self, record):
         '''
@@ -449,14 +467,14 @@ class DB:
         owner = request.form['owner']
         if not owner:
             owner = username
-        date = request.form['date']
+        gdate = request.form['date']
         
         # get active user
         c = self.conn.cursor()
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            c.execute("insert into goals (name,target,amount,target_date,owner,user_id) values (?,?,?,?,?,?)", (name,target,amount,date,owner,user_id))
+            c.execute("insert into goals (name,target,amount,target_date,owner,user_id) values (?,?,?,?,?,?)", (name,target,amount,gdate,owner,user_id))
         except Exception as e:
             print("Failed to add goal: {}".format(e))
             raise BadRequest(e)
@@ -499,14 +517,14 @@ class DB:
         owner = request.form['owner']
         if not owner:
             owner = username
-        date = request.form['date']
+        ddate = request.form['date']
         
         # get active user
         c = self.conn.cursor()
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            c.execute("insert into debt (name,amount,target_date,owner,user_id) values (?,?,?,?,?)", (name,amount,date,owner,user_id))
+            c.execute("insert into debt (name,amount,target_date,owner,user_id) values (?,?,?,?,?)", (name,amount,ddate,owner,user_id))
         except Exception as e:
             print("Failed to add debt: {}".format(e))
             raise BadRequest(e)
@@ -549,16 +567,16 @@ class DB:
         type = request.form['type'].lower()
         if not owner:
             owner = username
-        date = request.form['date']
-        if not date:
-            date = date.today().strftime("%Y-%m-%d")
+        idate = request.form['date']
+        if not idate:
+            idate = date.today().strftime("%Y-%m-%d")
         
         # get active user
         c = self.conn.cursor()
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            c.execute("insert into income (name,amount,date,type,owner,user_id) values (?,?,?,?,?,?)", (name,amount,date,type,owner,user_id))
+            c.execute("insert into income (name,amount,date,type,owner,user_id) values (?,?,?,?,?,?)", (name,amount,idate,type,owner,user_id))
         except Exception as e:
             print("Failed to add income: {}".format(e))
             raise BadRequest(e)

@@ -128,12 +128,14 @@ a:visited {
 .rowedit-buttons {
   background-color: white;
   border: 2px solid black;
+  padding: 3px 0px;
+  display: flex;
+  flex-flow: column nowrap;
 }
 
 .btn-rowedit {
   border-left: none;
   border-right: none;
-  margin: 5px 0px;
 }
 
 /* RowEdit Buttons */
@@ -241,9 +243,16 @@ td, th {
   padding: 8px;
 }
 
-tr:nth-child(even) {
-  /* background-color: #dddddd; */
+#etable tr:nth-child(4n+2) {
   background-color: rgba(125, 200, 100, .5);
+}
+
+.tr-even tr:nth-child(even) {
+  background-color: rgba(125, 200, 100, .5);
+}
+
+.subtable-container {
+  display: none;
 }
 
 /* Table */

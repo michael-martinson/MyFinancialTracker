@@ -36,6 +36,10 @@ $(document).ready(function () {
         { html: form_import, type: "import" },
         append_form,
     );
+    $(".e-data").on(
+        "contextmenu",
+        row_rightclick_e
+    );
     $(".tr-data").on(
         "contextmenu",
         row_rightclick
@@ -70,6 +74,7 @@ function setactivetable(event) {
 function row_rightclick(event) {
     event.preventDefault();
     let buttons = document.createElement('div')
+    buttons.className = "rowedit-buttons"
     buttons.innerHTML = rowedit_buttons;
     buttons.style.position = "absolute";
     buttons.style.left = `${event.clientX}px`;
@@ -82,6 +87,7 @@ function row_rightclick(event) {
         }
     );
     let rid = event.target.parentElement.cells[0].innerHTML;
+    // Delete the row
     let tablename = window.location.href.split('/').pop();
     if (!tablename) {
         tablename = "expenses";
@@ -96,9 +102,63 @@ function row_rightclick(event) {
 }
 
 let rowedit_buttons = `
-    <div class="rowedit-buttons">
-        <button class="btn btn-rowedit rowedit__deleterow">Delete Row</button>
-    </div>
+    <button class="btn btn-rowedit rowedit__deleterow">Delete Row</button>
+`
+
+function row_rightclick_e(event) {
+    event.preventDefault();
+    let buttons = document.createElement('div')
+    buttons.className = "rowedit-buttons"
+    buttons.innerHTML = rowedit_buttons_e;
+    buttons.style.position = "absolute";
+    buttons.style.left = `${event.clientX}px`;
+    buttons.style.top = `${event.clientY}px`;
+    $('body').append(buttons);
+    $(`.rowedit-buttons`).on(
+        "mouseleave",
+        function() {
+            $(this).remove();
+        }
+    );
+    let rid = event.target.parentElement.cells[0].innerHTML;
+
+    // Show spending
+    $(".rowedit__spending").on(
+        "click",
+        function() {
+            console.log("Hello there", rid);
+            $(`.stc-${rid}`).css("display", "table-cell");
+            $('.rowedit-buttons').remove();
+        }
+    );
+
+    // Hide spending
+    $(".rowedit__hide").on(
+        "click",
+        function() {
+            $(`.stc-${rid}`).css("display", "none");
+            $('.rowedit-buttons').remove();
+        }
+    );
+
+    // Delete the row
+    let tablename = window.location.href.split('/').pop();
+    if (!tablename) {
+        tablename = "expenses";
+    }
+    $(`.rowedit__deleterow`).on(
+        "click",
+        function() {
+            post("/deleterow", { "rid": rid, "tablename": tablename.slice(2)});
+            $('.rowedit-buttons').remove();
+        }
+    );
+}
+
+let rowedit_buttons_e = `
+    <button class="btn btn-rowedit rowedit__spending">Show Spending</button>
+    <button class="btn btn-rowedit rowedit__hide">Hide Spending</button>
+    <button class="btn btn-rowedit rowedit__deleterow">Delete Row</button>
 `
 
 function append_form(params) {

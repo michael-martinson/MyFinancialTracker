@@ -1,9 +1,9 @@
 {% extends "layout-MF.html" %}
 
 {% block main %}
-<div class="tablecontainer">
-    <table>
-        <tr class="tr-headers">
+<div class="" >
+    <table id="etable">
+        <tr class="tr tr-headers">
             <th>Due Date</th>
             <th>Name</th>
             <th>Expected</th>
@@ -13,23 +13,66 @@
         </tr>
         {% if rows %}
         {% for row in rows: %}
-        <tr class="tr-data">
+        <tr class="tr e-data">
             <!-- ID -->
-            <td class="rid" style="display: none;">{{row[0]}}</td>
+            <td class="rid" style="display: none;">{{row[0][0]}}</td>
             <!-- Date -->
-            <td>{{row[1]}}</td>
+            <td>{{row[0][1]}}</td>
             <!-- Name -->
-            <td>{{row[2]}}</td>
+            <td>{{row[0][2]}}</td>
             <!-- Expected -->
-            <td>${{row[3]}}</td>
+            <td>${{row[0][3]}}</td>
             <!-- Spent -->
-            <td>$0</td>
+            <td>${{row[1]}}</td>
             <!-- Repeats -->
-            <td>{{row[4]}}</td>
+            <td>{{row[0][4]}}</td>
             <!-- Owner -->
-            <td>{{row[5]}}</td>
+            <td>{{row[0][5]}}</td>
         </tr>
+            <td colspan="6" class="subtable-container {{"stc-{}".format(row[0][0])}}">
+            {% if row[2] %}
+            <!-- spending subtable -->
+                <table class="tr-even">
+                    <tr class="str tr-headers">
+                        <th>Date</th>
+                        <th>Name</th>
+                        <th>Amount</th>
+                        <th>Linked Expense</th>
+                        <th>Category</th>
+                        <th>Owner</th>
+                    </tr>
+                    {% for row in row[2]: %}
+                    <tr class="str tr-data">
+                        <!-- ID -->
+                        <td class="rid" style="display: none;">{{row[0]}}</td>
+                        <!-- Date -->
+                        <td>{{row[1]}}</td>
+                        <!-- Name -->
+                        <td>{{row[2]}}</td>
+                        <!-- Amount -->
+                        <td>${{row[3]}}</td>
+                        <!-- Linked Expense -->
+                        <td>{{row[4]}}</td>
+                        <!-- Category -->
+                        <td>{{row[5]}}</td>
+                        <!-- Owner -->
+                        <td>{{row[6]}}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+            </td>
         {% endfor %}
+        {% if etotal %}
+        <tr class="tr tr-total">
+            <td>Total:</td>
+            <td></td>
+            <td>${{etotal}}</td>
+            <td>${{stotal}}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        {% endif %}
         {% endif %}
     </table>
 </div>

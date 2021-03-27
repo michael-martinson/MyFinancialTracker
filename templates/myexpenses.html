@@ -33,7 +33,7 @@
             {% if row[2] %}
             <!-- spending subtable -->
                 <table class="tr-even">
-                    <tr class="str tr-headers">
+                    <tr class="str str-headers">
                         <th>Date</th>
                         <th>Name</th>
                         <th>Amount</th>
@@ -42,7 +42,7 @@
                         <th>Owner</th>
                     </tr>
                     {% for row in row[2]: %}
-                    <tr class="str tr-data">
+                    <tr class="str str-data">
                         <!-- ID -->
                         <td class="rid" style="display: none;">{{row[0]}}</td>
                         <!-- Date -->

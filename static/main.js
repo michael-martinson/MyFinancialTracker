@@ -48,6 +48,43 @@ $(document).ready(function () {
         "click",
         setactivetable
     );
+    $('.data-buttons__left').on(
+        "click",
+        function() {
+            let url = window.location.href.split('/');
+            let thedate = url.pop().split('-');
+            if (!thedate[1]) {
+                current_date = new Date();
+            } else {
+                current_date = new Date(thedate[0], thedate[1]-1, thedate[2]);
+            }
+            if (current_date.getMonth() === 0) {
+                new_date = new Date(current_date.getFullYear()-1, 11, 1);
+            } else {
+                new_date = new Date(current_date.getFullYear(), current_date.getMonth()-1, 1);
+            }
+            window.location = `/my${document.querySelector('.tablename').innerHTML}/${new_date.getFullYear()}-${new_date.getMonth()+1}-${new_date.getDate()}`;
+        }
+    );
+    $('.data-buttons__right').on(
+        "click",
+        function() {
+            let url = window.location.href.split('/');
+            let thedate = url.pop().split('-');
+            if (!thedate[1]) {
+                current_date = new Date()
+            } else {
+                current_date = new Date(thedate[0], thedate[1]-1, thedate[2]);
+            }
+            console.log(current_date);
+            if (current_date.getMonth() === 11) {
+                new_date = new Date(current_date.getFullYear()+1, 0, 1);
+            } else {
+                new_date = new Date(current_date.getFullYear(), current_date.getMonth()+1, 1);
+            }
+            window.location = `/my${document.querySelector('.tablename').innerHTML}/${new_date.getFullYear()}-${new_date.getMonth()+1}-${new_date.getDate()}`;
+        }
+    );
 });
 
 // Get and post request logic
@@ -88,14 +125,11 @@ function row_rightclick(event) {
     );
     let rid = event.target.parentElement.cells[0].innerHTML;
     // Delete the row
-    let tablename = window.location.href.split('/').pop();
-    if (!tablename) {
-        tablename = "expenses";
-    }
+    let tablename = document.querySelector(".tablename").innerHTML;
     $(`.rowedit__deleterow`).on(
         "click",
         function() {
-            post("/deleterow", { "rid": rid, "tablename": tablename.slice(2)});
+            post("/deleterow", { "rid": rid, "tablename": tablename});
             $('.rowedit-buttons').remove();
         }
     );
@@ -142,14 +176,14 @@ function row_rightclick_e(event) {
     );
 
     // Delete the row
-    let tablename = window.location.href.split('/').pop();
+    let tablename = document.querySelector(".tablename").innerHTML;
     if (!tablename) {
         tablename = "expenses";
     }
     $(`.rowedit__deleterow`).on(
         "click",
         function() {
-            post("/deleterow", { "rid": rid, "tablename": tablename.slice(2)});
+            post("/deleterow", { "rid": rid, "tablename": tablename});
             $('.rowedit-buttons').remove();
         }
     );
@@ -165,7 +199,7 @@ function append_form(params) {
     console.log("appending a form")
     ftype = params.data.type;
     $(".btn-form").attr("disabled", true);
-    $(".add-buttons").after(params.data.html);
+    $("body").append(params.data.html);
     $(`.form-${ftype} #name`).focus();
     $(`.cancel-${ftype}`).on("click", function() {
         $(".btn-form").attr("disabled", false);
@@ -198,20 +232,20 @@ let form_addspending = `
     <form class="form-add form-addspending" action="/addspending" method="POST">
         <div class="form-input-container">
             <label for="name">Name</label>
-            <input type="text" id="name" name="name" placeholder="groceries" required>
+            <input type="text" id="name" name="name" placeholder="Costco" required>
             <label for="amount">Amount</label>
-            <input type="number" id="amount" name="amount" min="1" step="any" placeholder="64.65" required>
+            <input type="number" id="amount" name="amount" min="1" step="any" placeholder="205.20" required>
         </div>
         <div class="form-input-container">
             Optional
             <label for="linkedExpense">Linked Expense</label>
-            <input type="text" id="linkedExpense" name="linkedExpense" placeholder="groceries (optional)">
+            <input type="text" id="linkedExpense" name="linkedExpense" placeholder="Groceries">
             <label for="category">Category</label>
-            <input type="text" id="category" name="category" placeholder="food (optional)">
+            <input type="text" id="category" name="category" placeholder="Food ">
             <label for="date">Date</label>
-            <input type="date" id="date" name="date" placeholder="optional default is today's date">
+            <input type="date" id="date" name="date">
             <label for="owner">Owner</label>
-            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <input type="text" id="owner" name="owner" placeholder="John">
         </div>
         <div class="form-input-buttons">
             <input class="btn submit-addspending" type="submit" value="Submit">
@@ -224,11 +258,9 @@ let form_addexpense = `
     <form class="form-add form-addexpense" action="/addexpense" method="POST">
         <div class="form-input-container">
             <label for="name">Name</label>
-            <input type="text" id="name" name="name" placeholder="groceries" required>
-        </div>
-        <div class="form-input-container">
-        <label for="expected">Expected</label>
-        <input type="number" id="expected" name="expected" min="1" step="any" placeholder="500" required>
+            <input type="text" id="name" name="name" placeholder="rent" required>
+            <label for="expected">Expected</label>
+            <input type="number" id="expected" name="expected" min="1" step="any" placeholder="1000" required>
         </div>
         <div class="form-input-container">
             Optional
@@ -241,9 +273,9 @@ let form_addexpense = `
                 <option value="yearly">Yearly</option>
             </select>
             <label for="date">Due Date</label>
-            <input type="date" id="date" name="date" placeholder="optional default is today's date">
+            <input type="date" id="date" name="date">
             <label for="owner">Owner</label>
-            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <input type="text" id="owner" name="owner" placeholder="John">
         </div>
         <div class="form-input-buttons">
         <input class="btn submit-addexpense" type="submit" value="Submit">
@@ -257,10 +289,8 @@ let form_addgoal = `
         <div class="form-input-container">
             <label for="name">Name</label>
             <input type="text" id="name" name="name" placeholder="new bike" required>
-        </div>
-        <div class="form-input-container">
-        <label for="target">Target Amount</label>
-        <input type="number" id="target" name="target" min="1" step="any" placeholder="100" required>
+            <label for="target">Target Amount</label>
+            <input type="number" id="target" name="target" min="1" step="any" placeholder="100" required>
         </div>
         <input type="hidden" id="amount" name="amount" min="1" step="any" value="0" required>
 
@@ -269,7 +299,7 @@ let form_addgoal = `
             <label for="date">When do you goal it?</label>
             <input type="date" id="date" name="date">
             <label for="owner">Owner</label>
-            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <input type="text" id="owner" name="owner" placeholder="John">
         </div>
         <div class="form-input-buttons">
         <input class="btn submit-addgoal" type="submit" value="Submit">
@@ -281,18 +311,16 @@ let form_adddebt = `
     <form class="form-add form-adddebt" action="/adddebt" method="POST">
         <div class="form-input-container">
             <label for="name">Name</label>
-            <input type="text" id="name" name="name" placeholder="School loans" required>
-        </div>
-        <div class="form-input-container">
-        <label for="amount">Amount</label>
-        <input type="number" id="amount" name="amount" min="1" step="any" placeholder="100" required>
+            <input type="text" id="name" name="name" placeholder="Student Loans" required>
+            <label for="amount">Amount</label>
+            <input type="number" id="amount" name="amount" min="1" step="any" placeholder="10000" required>
         </div>
         <div class="form-input-container">
             Optional
             <label for="date">When do you goal it payed off?</label>
             <input type="date" id="date" name="date">
             <label for="owner">Owner</label>
-            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <input type="text" id="owner" name="owner" placeholder="John">
         </div>
         <div class="form-input-buttons">
         <input class="btn submit-adddebt" type="submit" value="Submit">
@@ -306,24 +334,20 @@ let form_addincome = `
         <div class="form-input-container">
             <label for="name">Name</label>
             <input type="text" id="name" name="name" placeholder="paycheck" required>
-        </div>
-        <div class="form-input-container">
-        <label for="amount">How Much</label>
-        <input type="number" id="amount" name="amount" min="1" step="any" placeholder="400" required>
-        </div>
-        <div class="form-input-container">
-        <label for="type">What type of income is it</label>
-        <input type="text" id="type" name="type" placeholder="Active / Passive">
+            <label for="amount">How Much</label>
+            <input type="number" id="amount" name="amount" min="1" step="any" placeholder="400" required>
+            <label for="type">What type of income is it</label>
+            <input type="text" id="type" name="type" placeholder="Active / Passive">
         </div>
 
         <div class="form-input-container">
             Optional
             <label for="category">Category</label>
-            <input type="text" id="category" name="category" placeholder="food (optional)">
+            <input type="text" id="category" name="category" placeholder="">
             <label for="date">Date</label>
             <input type="date" id="date" name="date">
             <label for="owner">Owner</label>
-            <input type="text" id="owner" name="owner" placeholder="John (optional)">
+            <input type="text" id="owner" name="owner" placeholder="John">
         </div>
         <div class="form-input-buttons">
             <input class="btn submit-addincome" type="submit" value="Submit">

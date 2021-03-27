@@ -13,6 +13,7 @@ import sqlite3
 import json
 from markupsafe import escape
 import secrets
+import datetime, calendar
 from db import (DB, BadRequest, KeyNotFound, UsernameAlreadyExists)
 
 # Configure application
@@ -23,13 +24,6 @@ DATABASE = './database.db'
 
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = secrets.token_urlsafe(50)
-
-# default path
-@app.route("/")
-def home(message = None):
-    if not check_logged_in():
-        return redirect(url_for('login'))
-    return redirect(url_for('myexpenses'))
 
 ########################################
 ## login endpoints                    ##
@@ -51,7 +45,7 @@ def login():
                 app.logger.error(e)
                 error = 'Invalid Credentials. Please try again.'
                 return render_template('login.html', newuser=False, error=error)
-            return redirect(url_for('home'))
+            return redirect(url_for('myexpenses'))
         else:
             error = 'Username or Password was empty. Please try again.'
     return render_template('login.html', newuser=False, error=error)
@@ -60,21 +54,18 @@ def login():
 def createuser():
     error = None
     if request.method == 'POST':
-        if request.form['username'] and request.form['password']:
-            db = DB(get_db())
-            try:
-                db.add_user(request)
-                session['username'] = request.form['username']
-            except UsernameAlreadyExists as e:
-                app.logger.error(e.message)
-                error = "Username already exists. Try a different one."
-                return render_template('login.html', newuser=True, error=error)
-            except Exception as e:
-                app.logger.error(e)
-                return render_template('login.html', newuser=True, error=e)
-            return redirect(url_for('home'))
-        else:
-            error = 'Username or Password was empty. Please try again.'
+        db = DB(get_db())
+        try:
+            db.add_user(request)
+            session['username'] = request.form['username']
+        except UsernameAlreadyExists as e:
+            app.logger.error(e.message)
+            error = "Username already exists. Try a different one."
+            return render_template('login.html', newuser=True, error=error)
+        except Exception as e:
+            app.logger.error(e)
+            return render_template('login.html', newuser=True, error=e)
+        return redirect(url_for('myexpenses'))
     return render_template('login.html', newuser=True, error=error)
 
 @app.route('/logout')
@@ -82,46 +73,6 @@ def logout():
     # remove the username from the session if it's there
     session.pop('username', None)
     return redirect(url_for('login'))
-
-
-########################################
-## Spending endpoints                 ##
-########################################
-
-@app.route('/addspending', methods=['POST'])
-def addspending():
-    if not check_logged_in():
-        return redirect(url_for('login'))
-    db = DB(get_db())
-    message = "Spending added successfully"
-    try:
-        db.addspending(session['username'], request)
-    except BadRequest as e:
-        app.logger.error(f"{e}")
-        message = "Add spending failed. Make user form input is correct"
-    return redirect(url_for('myspending'))
-
-@app.route('/myspending', methods=['Get'])
-def myspending():
-    if not check_logged_in():
-        return redirect(url_for('login'))
-    db = DB(get_db())
-    message = None
-    myspending = None
-    try:
-        (myspending, total) = db.myspending(session['username'])
-        print(myspending)
-    except BadRequest as e:
-        app.logger.error(f"{e}")
-        message = "Something went wrong. Please try again"
-    return render_template(
-        "myspending.html", 
-        rows=myspending, 
-        total=total, 
-        table="spending", 
-        message=message, 
-        username=session['username']
-    ) 
 
 
 ########################################
@@ -141,8 +92,10 @@ def addexpense():
         message = "Add expense failed. Make user form input is correct"
     return redirect(url_for('myexpenses'))
 
-@app.route('/myexpenses', methods=['Get'])
-def myexpenses():
+@app.route("/")
+@app.route("/myexpenses/")
+@app.route('/myexpenses/<target_date>', methods=['Get'])
+def myexpenses(target_date = None):
     if not check_logged_in():
         return redirect(url_for('login'))
     db = DB(get_db())
@@ -150,8 +103,12 @@ def myexpenses():
     myexpenses = None
     etot = None
     stot = None
+    if not target_date:
+        target_date = datetime.date.today()
+    else:
+        target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
-        (myexpenses,etot,stot) = db.myexpenses(session['username'])
+        (myexpenses,etot,stot) = db.myexpenses(session['username'], target_date)
         print(myexpenses, etot, stot)
     except BadRequest as e:
         app.logger.error(f"{e}")
@@ -161,8 +118,56 @@ def myexpenses():
         rows=myexpenses,
         etotal=etot,
         stotal=stot,
+        month=calendar.month_name[target_date.month],
+        year=target_date.year,
         table="expenses",
         message=message,
+        username=session['username']
+    ) 
+
+########################################
+## Spending endpoints                 ##
+########################################
+
+@app.route('/addspending', methods=['POST'])
+def addspending():
+    if not check_logged_in():
+        return redirect(url_for('login'))
+    db = DB(get_db())
+    message = "Spending added successfully"
+    try:
+        db.addspending(session['username'], request)
+    except BadRequest as e:
+        app.logger.error(f"{e}")
+        message = "Add spending failed. Make user form input is correct"
+    return redirect(url_for('myspending'))
+
+@app.route('/myspending/', methods=['Get'])
+@app.route('/myspending/<target_date>', methods=['Get'])
+def myspending(target_date = None):
+    if not check_logged_in():
+        return redirect(url_for('login'))
+    db = DB(get_db())
+    message = None
+    myspending = None
+    if not target_date:
+        target_date = datetime.date.today()
+    else:
+        target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
+    try:
+        (myspending, total) = db.myspending(session['username'], target_date)
+        print(myspending)
+    except BadRequest as e:
+        app.logger.error(f"{e}")
+        message = "Something went wrong. Please try again"
+    return render_template(
+        "myspending.html", 
+        rows=myspending, 
+        total=total, 
+        month=calendar.month_name[target_date.month],
+        year=target_date.year,
+        table="spending", 
+        message=message, 
         username=session['username']
     ) 
 
@@ -184,7 +189,7 @@ def addgoal():
         message = "Add goal failed. Make user form input is correct"
     return redirect(url_for('mygoals'))
 
-@app.route('/mygoals', methods=['Get'])
+@app.route('/mygoals/', methods=['Get'])
 def mygoals():
     if not check_logged_in():
         return redirect(url_for('login'))
@@ -197,7 +202,13 @@ def mygoals():
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("mygoals.html", rows=mygoals, table="goals", message=message, username=session['username'])
+    return render_template(
+        "mygoals.html", 
+        rows=mygoals,
+        table="goals",
+        message=message,
+        username=session['username']
+    ) 
 
 
 ########################################
@@ -217,7 +228,7 @@ def adddebt():
         message = "Add Debt failed. Make user form input is correct"
     return redirect(url_for('mydebt'))
 
-@app.route('/mydebt', methods=['Get'])
+@app.route('/mydebt/', methods=['Get'])
 def mydebt():
     if not check_logged_in():
         return redirect(url_for('login'))
@@ -230,7 +241,13 @@ def mydebt():
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("mydebt.html", rows=mydebt, table="debt", message=message, username=session['username'])
+    return render_template(
+        "mydebt.html",
+        rows=mydebt,
+        table="debt",
+        message=message,
+        username=session['username']
+    )
 
 
 ########################################
@@ -250,20 +267,34 @@ def addincome():
         message = "Add income failed. Make user form input is correct"
     return redirect(url_for('myincome'))
 
-@app.route('/myincome', methods=['Get'])
-def myincome():
+@app.route('/myincome/', methods=['Get'])
+@app.route('/myincome/<target_date>', methods=['Get'])
+def myincome(target_date = None):
     if not check_logged_in():
         return redirect(url_for('login'))
     db = DB(get_db())
     message = None
     myincome = None
+    print("income", target_date)
+    if not target_date:
+        target_date = datetime.date.today()
+    else:
+        target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
-        myincome = db.myincome(session['username'])
+        myincome = db.myincome(session['username'], target_date)
         print(myincome)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
-    return render_template("myincome.html", rows=myincome, table="income", message=message, username=session['username'])
+    return render_template(
+        "myincome.html",
+        rows=myincome,
+        month=calendar.month_name[target_date.month],
+        year=target_date.year,
+        table="income",
+        message=message,
+        username=session['username']
+    ) 
 
 
 ########################################
@@ -278,7 +309,7 @@ def deleterow():
     message = "row deleted successfully"
     try:
         data = json.loads(request.data.decode())
-        print(data)
+        print("deleterow", data)
         db.delete_record(session['username'], data['tablename'], data['rid'])
     except BadRequest as e:
         app.logger.error(f"{e}")

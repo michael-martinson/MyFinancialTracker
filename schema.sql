@@ -22,6 +22,7 @@ CREATE TABLE expenses (
     due_date DATE NOT NULL,
     repeat_type varchar(25) NOT NULL,
     owner varchar(25),
+    notes varchar(255),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(user_id)
@@ -36,6 +37,7 @@ CREATE TABLE spending (
     expense_name varchar(50),
     owner varchar(50),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    notes varchar(255),
     user_id INT NOT NULL,
     goal_id INT,
     FOREIGN KEY(user_id) REFERENCES users(user_id),
@@ -50,6 +52,7 @@ CREATE TABLE goals (
     amount MONEY NOT NULL,
     target_date DATE,
     owner varchar(50),
+    notes varchar(255),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(user_id)
@@ -61,6 +64,7 @@ CREATE TABLE debt (
     amount MONEY NOT NULL,
     target_date DATE,
     owner varchar(50),
+    notes varchar(255),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(user_id)
@@ -73,6 +77,7 @@ CREATE TABLE income (
     date DATE NOT NULL,
     type varchar(10) NOT NULL,
     owner varchar(50),
+    notes varchar(255),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     FOREIGN KEY(user_id) REFERENCES users(user_id)

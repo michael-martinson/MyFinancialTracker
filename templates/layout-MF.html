@@ -34,7 +34,15 @@
         <div class="notify" style="color: red;">{{message}}</div>
     {% endif %}
     <main class="root">
-        <div class="add-buttons">
+        <div class="table-buttons">
+            {% if table != 'goals' and table != 'debt' %}
+            <div class="data-buttons">
+                <button class="btn data-buttons__left"><</button>
+                <span>{{month}} {{year}}</span>
+                <button class="btn data-buttons__right">></button>
+            </div>
+            {% endif %}
+
             {% if table == "expenses" %}
                 <button type="button" class="btn btn-add btn-form btn-addexpense">Add expense</button>
             {% elif table == "spending" %}
@@ -46,22 +54,23 @@
             {% elif table == "income" %}
                 <button type="button" class="btn btn-add btn-form btn-addincome">Add income</button>
             {% endif %}
+            <div class="tablename" style="display: none;">{{table}}</div>
         </div>
         <nav class="tablenav">
-            <a class="navlink tablenav__link" href="/myexpenses">
+            <a class="navlink tablenav__link" href="#" onclick="window.location=`/myexpenses/${window.location.href.split('/').pop()}`">
                 <div> My Expenses </div>
             </a>
-            <a class="navlink tablenav__link" href="/myspending">
+            <a class="navlink tablenav__link" href="#" onclick="window.location=`/myspending/${window.location.href.split('/').pop()}`">
                 <div> My Spending </div>
             </a>
-            <a class="navlink tablenav__link" href="/mygoals">
+            <a class="navlink tablenav__link" href="#" onclick="window.location=`/myincome/${window.location.href.split('/').pop()}`">
+                <div> My Income </div>
+            </a>
+            <a class="navlink tablenav__link" href="/mygoals/">
                 <div> My Goals </div>
             </a>
-            <a class="navlink tablenav__link" href="/mydebt">
+            <a class="navlink tablenav__link" href="/mydebt/">
                 <div> My Debt </div>
-            </a>
-            <a class="navlink tablenav__link" href="/myincome">
-                <div> My Income </div>
             </a>
         </nav>
         {% block main %}{% endblock %}

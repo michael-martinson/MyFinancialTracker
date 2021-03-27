@@ -224,6 +224,187 @@ class DB:
         
 
     ########################################
+    ## Expense management                 ##
+    ########################################
+
+    def insert_expense(self, record):
+        '''
+            insert an expense given a tuple of values.
+            assumes that validation has been done
+            record format: (name, expected, due_date, repeat_type, owner, user_id)
+        '''
+        # get active user
+        c = self.conn.cursor()
+
+        # enforce unique names per month
+        duedate = datetime.strptime(record[2], "%Y-%m-%d").date()
+        target_month = date(duedate.year, duedate.month, 1).strftime("%Y-%m-%d")
+        if target_date.month == 12:
+            next_month = date(target_date.year+1, 1, 1).strftime("%Y-%m-%d")
+        else: 
+            next_month = date(target_date.year, target_date.month+1, 1).strftime("%Y-%m-%d")
+        c.execute("select name from expenses where user_id = (?) and name = (?) and due_date > (?) and due_date <= (?)", (record[5], record[0], target_month, next_month))
+        res = c.fetchone()
+        if res:
+            print("The expense name {} already exists".format(res[0]))
+            raise UsernameAlreadyExists("Expense name already exists")
+        try:
+            print("insert record", record)
+            c.execute("insert into expenses (name,expected,due_date,repeat_type,owner,user_id) values (?,?,?,?,?,?)", record)
+            c.execute("select expense_id from expenses where user_id = (?) and name = (?)", (record[5], record[0]))
+        except Exception as e:
+            print("Failed to add expense: {}".format(e))
+            raise BadRequest(e)
+            
+        eid = c.fetchone()
+        c.close()
+        self.conn.commit()
+        return eid
+
+    def addexpense(self, username, request):
+        # validate that all required info is here
+        name = request.form['name'].capitalize()
+        expected = request.form['expected']
+        repeat_type = request.form['repeat']
+        owner = request.form['owner'].capitalize()
+        if not owner:
+            owner = username
+        edate = request.form['date']
+        if not edate:
+            edate = date.today().strftime("%Y-%m-%d")
+        
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+
+        try:
+            self.insert_expense((name,expected,edate,repeat_type,owner,user_id))
+        except Exception as e:
+            print("addexpense error: {}".format(e))
+            raise BadRequest(e)
+            
+        c.close()
+        self.conn.commit()
+        return '{"message":"new expense inserted"}'
+
+    def myexpenses(self, username, target_date):
+        # get active user
+        c = self.conn.cursor()
+        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        target_month = date(target_date.year, target_date.month, 1).strftime("%Y-%m-%d")
+        if target_date.month == 12:
+            next_month = date(target_date.year+1, 1, 1).strftime("%Y-%m-%d")
+        else: 
+            next_month = date(target_date.year, target_date.month+1, 1).strftime("%Y-%m-%d")
+
+        try:
+            # totals per month
+            c.execute("select sum(expected) from expenses where user_id = (?) and due_date > (?) and due_date <= (?)", (user_id, target_month, next_month))
+            etotal = c.fetchone()[0]
+            c.execute("select sum(amount) from spending where user_id = (?) and expense_name is not null and date > (?) and date <= (?)", (user_id, target_month, next_month))
+            stotal = c.fetchone()[0]
+            if not stotal:
+                stotal = 0
+
+            c.execute(
+                '''
+                select expense_id,strftime("%m/%d/%Y", due_date),name,expected,repeat_type,owner from expenses 
+                where user_id = (?) and due_date > (?) and due_date <= (?)
+                order by due_date asc, name;
+                ''', (user_id,target_month, next_month)
+            )
+            expenses = c.fetchall()
+            result = []
+            for e in expenses:
+                c.execute("select sum(amount) from spending where user_id = (?) and expense_name = (?) and date > (?) and date <= (?)", (user_id,e[2],target_month, next_month))
+                tot = c.fetchone()[0]
+                if not tot:
+                    tot = 0
+                c.execute(
+                    '''
+                    select spending_id,strftime("%m/%d/%Y", date),name,amount,expense_name,category,owner from spending 
+                    where user_id = (?) and expense_name = (?) and date > (?) and date <= (?)
+                    order by date desc, name;
+                    ''', (user_id, e[2], target_month, next_month)
+                )
+                result += [(e, tot, c.fetchall())]
+        except Exception as e:
+            print("Failed to get expenses: {}".format(e))
+            raise BadRequest(e)
+
+        c.close()
+        self.conn.commit()
+        return (result, etotal, stotal)
+
+    # def expense_repeats(self, today, records, user_id):
+    #     output = []
+    #     for r in records:
+    #         duedate = datetime.strptime(r[1], "%m/%d/%Y").date()
+    #         repeats = r[4]
+    #         difference = duedate - today
+    #         try: 
+    #             if repeats == "weekly":
+    #                 if difference.days < 0:
+    #                     print("weekly repeat")
+    #                     next_date = (duedate + timedelta(7)).strftime("%m/%d/%Y")
+    #                     (i, d, n, e, r, o) = r
+    #                     r = (n, e, next_date, r, o, user_id)
+    #                     if r not in records:
+    #                         eid = self.insert_expense(r)
+    #                         output += [(eid,next_date,n,e,rep,o)]
+    #                 else:
+    #                     output += [r]
+    #             elif repeats == "biweekly":
+    #                 if difference.days < 0:
+    #                     print("biweekly repeat")
+    #                     next_date = (duedate + timedelta(14)).strftime("%m/%d/%Y")
+    #                     (i, d, n, e, r, o) = r
+    #                     r = (n, e, next_date, r, o, user_id)
+    #                     if r not in records:
+    #                         eid = self.insert_expense(r)
+    #                         output += [(eid,next_date,n,e,rep,o)]
+    #                 else:
+    #                     output += [r]
+    #             elif repeats == "monthly":
+    #                 if difference.days < 0:
+    #                     print("monthly repeat")
+    #                     if duedate.month == 12:
+    #                         next_date = date(duedate.year+1,1,duedate.day)
+    #                     else:
+    #                         lastday = calendar.monthrange(duedate.year, duedate.month+1)[1]
+    #                         if duedate.day > lastday:
+    #                             next_date = date(duedate.year, duedate.month+1, lastday).strftime("%m/%d/%Y")
+    #                         else:
+    #                             next_date = date(duedate.year, duedate.month+1,duedate.day).strftime("%m/%d/%Y")
+    #                     (i, d, n, e, rep, o) = r
+    #                     r = (n, e, next_date, rep, o, user_id)
+    #                     if r not in records:
+    #                         eid = self.insert_expense(r)
+    #                         output += [(eid,next_date,n,e,rep,o)]
+    #                 else:
+    #                     output += [r]
+    #             elif repeats == "yearly":
+    #                 if difference.days < 0:
+    #                     print("yearly repeat")
+    #                     next_date = date(duedate.year+1, duedate.month,duedate.day).strftime("%m/%d/%Y")
+    #                     # construct new expense only modifying date
+    #                     (i, d, n, e, r, o) = r
+    #                     r = (n, e, next_date, r, o, user_id)
+    #                     if r not in records:
+    #                         eid = self.insert_expense(r)
+    #                         output += [(eid,next_date,n,e,rep,o)]
+    #                 else:
+    #                     output += [r]
+    #             else:
+    #                 if difference.day >= 0:
+    #                     output += [r]
+    #         except Exception as e:
+    #             print("Failed to insert repeat expense: {}".format(e))
+    #             BadRequest(e)
+    #     return output
+
+
+    ########################################
     ## Spending management                ##
     ########################################
 
@@ -254,21 +435,26 @@ class DB:
         self.conn.commit()
         return '{"message":"new spending inserted"}'
 
-    def myspending(self, username):
+    def myspending(self, username, target_date):
         # get active user
         c = self.conn.cursor()
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        target_month = date(target_date.year, target_date.month, 1).strftime("%Y-%m-%d")
+        if target_date.month == 12:
+            next_month = date(target_date.year+1, 1, 1).strftime("%Y-%m-%d")
+        else: 
+            next_month = date(target_date.year, target_date.month+1, 1).strftime("%Y-%m-%d")
 
         total = None
         try:
-            c.execute("select sum(amount) from spending where user_id = (?)", (user_id,))
+            c.execute("select sum(amount) from spending where user_id = (?) and date > (?) and date <= (?)", (user_id,target_month,next_month))
             total = c.fetchone()[0]
             c.execute(
                 '''
                 select spending_id,strftime("%m/%d/%Y", date),name,amount,expense_name,category,owner from spending 
-                where user_id = (?)
+                where user_id = (?) and date > (?) and date <= (?)
                 order by date desc, name;
-                ''', (user_id,) 
+                ''', (user_id,target_month,next_month) 
             )
         except Exception as e:
             print("Failed to get spending: {}".format(e))
@@ -278,181 +464,6 @@ class DB:
         c.close()
         self.conn.commit()
         return (result, total)
-
-
-    ########################################
-    ## Expense management                 ##
-    ########################################
-
-    def addexpense(self, username, request):
-        # validate that all required info is here
-        name = request.form['name'].capitalize()
-        expected = request.form['expected']
-        repeat_type = request.form['repeat']
-        owner = request.form['owner'].capitalize()
-        if not owner:
-            owner = username
-        edate = request.form['date']
-        if not edate:
-            edate = date.today().strftime("%Y-%m-%d")
-        
-        # get active user
-        c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
-
-        try:
-            print((name,expected,edate,repeat_type,owner,user_id))
-            self.insert_expense((name,expected,edate,repeat_type,owner,user_id))
-        except Exception as e:
-            raise BadRequest(e)
-            
-        c.close()
-        self.conn.commit()
-        return '{"message":"new expense inserted"}'
-
-    def myexpenses(self, username):
-        # get active user
-        c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
-        # get current date
-        today = date.today()
-        this_month = date(today.year, today.month, 1)
-        if today.month == 1:
-            last_month = date(today.year-1, 12, 1)
-        else:
-            last_month = date(today.year, today.month-1, 1)
-
-        try:
-            c.execute("select sum(expected) from expenses where user_id = (?)", (user_id,))
-            etotal = c.fetchone()[0]
-            c.execute("select sum(amount) from spending where user_id = (?) and expense_name is not null", (user_id,))
-            stotal = c.fetchone()[0]
-            if not stotal:
-                stotal = 0
-            c.execute(
-                '''
-                select expense_id,strftime("%m/%d/%Y", due_date),name,expected,repeat_type,owner from expenses 
-                where user_id = (?) and due_date > (?)
-                order by due_date asc, name;
-                ''', (user_id,last_month.strftime("%Y-%m-%d"))
-            )
-            expenses = self.expense_repeats(today, c.fetchall())
-            result = []
-            for e in expenses:
-                c.execute("select sum(amount) from spending where user_id = (?) and expense_name = (?)", (user_id,e[2]))
-                tot = c.fetchone()[0]
-                if not tot:
-                    tot = 0
-                c.execute(
-                    '''
-                    select spending_id,strftime("%m/%d/%Y", date),name,amount,expense_name,category,owner from spending 
-                    where user_id = (?) and expense_name = (?)
-                    order by date desc, name;
-                    ''', (user_id, e[2])
-                )
-                result += [(e, tot, c.fetchall())]
-        except Exception as e:
-            print("Failed to get expenses: {}".format(e))
-            raise BadRequest(e)
-
-        c.close()
-        self.conn.commit()
-        return (result, etotal, stotal)
-
-    def insert_expense(self, record):
-        '''
-            insert an expense given a tuple of values.
-            assumes that validation has been done
-            record format: (name, expected, due_date, repeat_type, owner, user_id)
-        '''
-        # get active user
-        c = self.conn.cursor()
-
-        # enforce unique names
-        c.execute("select * from expenses where name = (?)", (record[0],))
-        res = c.fetchone()
-        if res:
-            print("The expense name {} already exists".format(name))
-            raise UsernameAlreadyExists("Expense name already exists")
-        try:
-            print("insert record", record)
-            c.execute("insert into expenses (name,expected,due_date,repeat_type,owner,user_id) values (?,?,?,?,?,?)", record)
-            c.execute("select expense_id from expenses where user_id = (?) and name = (?)", (record[0], record[5]))
-        except Exception as e:
-            print("Failed to add expense: {}".format(e))
-            raise BadRequest(e)
-            
-        eid = c.fetchone()
-        c.close()
-        self.conn.commit()
-        return eid
-
-    def expense_repeats(self, today, records):
-        output = []
-        for r in records:
-            duedate = datetime.strptime(r[1], "%m/%d/%Y").date()
-            repeats = r[4]
-            difference = duedate - today
-            try: 
-                if repeats == "weekly":
-                    if difference.days < 0:
-                        print("weekly repeat")
-                        next_date = (duedate + timedelta(7)).strftime("%m/%d/%Y")
-                        (i, d, n, e, r, o) = r
-                        r = (n, e, next_date, r, o, user_id)
-                        if r not in results:
-                            eid = self.insert_expense(r)
-                            output += [(eid,next_date,n,e,rep,o)]
-                    else:
-                        output += [r]
-                elif repeats == "biweekly":
-                    if difference.days < 0:
-                        print("biweekly repeat")
-                        next_date = (duedate + timedelta(14)).strftime("%m/%d/%Y")
-                        (i, d, n, e, r, o) = r
-                        r = (n, e, next_date, r, o, user_id)
-                        if r not in results:
-                            eid = self.insert_expense(r)
-                            output += [(eid,next_date,n,e,rep,o)]
-                    else:
-                        output += [r]
-                elif repeats == "monthly":
-                    if difference.days < 0:
-                        print("monthly repeat")
-                        if duedate.month == 12:
-                            next_date = date(duedate.year+1,1,duedate.day)
-                        else:
-                            lastday = calendar.monthrange(duedate.year, duedate.month+1)[1]
-                            if duedate.day > lastday:
-                                next_date = date(duedate.year, duedate.month+1, lastday).strftime("%m/%d/%Y")
-                            else:
-                                next_date = date(duedate.year, duedate.month+1,duedate.day).strftime("%m/%d/%Y")
-                        (i, d, n, e, rep, o) = r
-                        r = (n, e, next_date, rep, o, user_id)
-                        if r not in results:
-                            eid = self.insert_expense(r)
-                            output += [(eid,next_date,n,e,rep,o)]
-                    else:
-                        output += [r]
-                elif repeats == "yearly":
-                    if difference.days < 0:
-                        print("yearly repeat")
-                        next_date = date(duedate.year+1, duedate.month,duedate.day).strftime("%m/%d/%Y")
-                        # construct new expense only modifying date
-                        (i, d, n, e, r, o) = r
-                        r = (n, e, next_date, r, o, user_id)
-                        if r not in results:
-                            eid = self.insert_expense(r)
-                            output += [(eid,next_date,n,e,rep,o)]
-                    else:
-                        output += [r]
-                else:
-                    if difference.day >= 0:
-                        output += [r]
-            except Exception as e:
-                print("Failed to insert repeat expense: {}".format(e))
-                BadRequest(e)
-        return output
 
 
     ########################################
@@ -542,7 +553,7 @@ class DB:
             c.execute(
                 '''
                 select debt_id,strftime("%m/%d/%Y", target_date),name,amount,owner from debt 
-                where user_id = (?)
+                where user_id = (?) 
                 order by target_date desc, name;
                 ''', (user_id,)
             )
@@ -585,18 +596,23 @@ class DB:
         self.conn.commit()
         return '{"message":"new income inserted"}'
     
-    def myincome(self, username):
+    def myincome(self, username, target_date):
         # get active user
         c = self.conn.cursor()
         user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        target_month = date(target_date.year, target_date.month, 1).strftime("%Y-%m-%d")
+        if target_date.month == 12:
+            next_month = date(target_date.year+1, 1, 1).strftime("%Y-%m-%d")
+        else: 
+            next_month = date(target_date.year, target_date.month+1, 1).strftime("%Y-%m-%d")
 
         try:
             c.execute(
                 '''
                 select income_id,strftime("%m/%d/%Y", date),name,amount,type,owner from income 
-                where user_id = (?)
+                where user_id = (?) and date > (?) and date <= (?)
                 order by date desc, name;
-                ''', (user_id,)
+                ''', (user_id,target_month,next_month)
             )
         except Exception as e:
             print("Failed to get income: {}".format(e))

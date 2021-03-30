@@ -250,7 +250,6 @@ class DB:
             raise UsernameAlreadyExists("Expense name already exists")
         try:
             print("insert record", record)
-            c.execute("insert into expenses (name,expected,due_date,repeat_type,owner,user_id) values (?,?,?,?,?,?)", record)
             c.execute("select expense_id from expenses where user_id = (?) and name = (?)", (record[5], record[0]))
         except Exception as e:
             print("Failed to add expense: {}".format(e))

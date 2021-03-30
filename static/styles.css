@@ -202,8 +202,8 @@ a:visited {
 }
 
 .form-import {
-  height: 30%;
-  width: 8%;
+  height: 300px;
+  width: 500px;
 }
 
 .csvtableselect {

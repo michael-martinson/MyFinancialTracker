@@ -24,7 +24,7 @@ app = Flask(__name__)
 DATABASE = './myfinancials.db'
 
 # Set the secret key to some random bytes. Keep this really secret!
-app.secret_key = secrets.token_urlsafe(50)
+app.secret_key = secrets.token_urlsafe(30)
 
 ########################################
 ## login endpoints                    ##

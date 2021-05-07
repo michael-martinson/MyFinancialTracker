@@ -111,6 +111,7 @@ def myexpenses(target_date = None):
         target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
         (myexpenses,etot,stot) = db.myexpenses(session['username'], target_date)
+        print(myexpenses, etot, stot)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -157,6 +158,7 @@ def myspending(target_date = None):
         target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
         (myspending, total) = db.myspending(session['username'], target_date)
+        print(myspending)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -198,6 +200,7 @@ def mygoals():
     mygoals = None
     try:
         (mygoals, total) = db.mygoals(session['username'])
+        print(mygoals)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -237,6 +240,7 @@ def mydebt():
     mydebt = None
     try:
         (mydebt, total) = db.mydebt(session['username'])
+        print(mydebt)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -275,12 +279,14 @@ def myincome(target_date = None):
     db = DB(get_db())
     message = None
     myincome = None
+    print("income", target_date)
     if not target_date:
         target_date = datetime.date.today()
     else:
         target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
         (myincome, total) = db.myincome(session['username'], target_date)
+        print(myincome)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -308,6 +314,7 @@ def deleterow():
     message = "row deleted successfully"
     try:
         data = json.loads(request.data.decode())
+        print("deleterow", data)
         db.delete_record(session['username'], data['tablename'], data['rid'])
     except BadRequest as e:
         app.logger.error(f"{e}")
@@ -337,6 +344,7 @@ def importcsv():
 ########################################
 
 def check_logged_in():
+    print(session)
     if 'username' in session:
         print("you are logged in! " + session['username'])
         return True

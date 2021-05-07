@@ -19,12 +19,13 @@ from db import (DB, BadRequest, KeyNotFound, UsernameAlreadyExists)
 
 # Configure application
 app = Flask(__name__)
+app.config.update(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True)
 
 # path to database
 DATABASE = './myfinancials.db'
 
 # Set the secret key to some random bytes. Keep this really secret!
-app.secret_key = secrets.token_urlsafe(30)
+app.secret_key = 'f4_LpwUFVA2WaLjsjcwrgS8WrFt4pmAa4A' 
 
 ########################################
 ## login endpoints                    ##
@@ -374,5 +375,4 @@ def init_db():
     
 
 if __name__ == "__main__":
-    app.config.update(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True)
     app.run(threaded=True, port=5000, debug=False)

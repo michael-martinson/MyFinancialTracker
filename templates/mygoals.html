@@ -7,7 +7,7 @@
             <th>Target Date</th>
             <th>Name</th>
             <th>Target</th>
-            <th>Amount</th>
+            <!-- <th>Amount</th> -->
             <th>Owner</th>
         </tr>
         {% if rows %}
@@ -22,11 +22,20 @@
             <!-- Target -->
             <td>${{row[3]}}</td>
             <!-- Amount -->
-            <td>${{row[4]}}</td>
+            <!-- <td>${{row[4]}}</td> -->
             <!-- Owner -->
             <td>{{row[5]}}</td>
         </tr>
         {% endfor %}
+        {% if total %}
+        <tr class="tr-total">
+            <td>Total:</td>
+            <td></td>
+            <td>${{total}}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        {% endif %}
         {% endif %}
     </table>
 </div>

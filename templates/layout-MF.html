@@ -43,17 +43,14 @@
             </div>
             {% endif %}
 
-            {% if table == "expenses" %}
+            <div class="add-buttons">
+                <button type="button" class="btn" id="add-record-button">Add</button>
                 <button type="button" class="btn btn-add btn-form btn-addexpense">Add expense</button>
-            {% elif table == "spending" %}
                 <button type="button" class="btn btn-add btn-form btn-addspending">Add spending</button>
-            {% elif table == "goals" %}
                 <button type="button" class="btn btn-add btn-form btn-addgoal">Add goal</button>
-            {% elif table == "debt" %}
                 <button type="button" class="btn btn-add btn-form btn-adddebt">Add debt</button>
-            {% elif table == "income" %}
                 <button type="button" class="btn btn-add btn-form btn-addincome">Add income</button>
-            {% endif %}
+            </div>
             <div class="tablename" style="display: none;">{{table}}</div>
         </div>
         <nav class="tablenav">

@@ -13,6 +13,7 @@ import sqlite3
 import json
 from markupsafe import escape
 import secrets
+import os
 import datetime, calendar
 from db import (DB, BadRequest, KeyNotFound, UsernameAlreadyExists)
 
@@ -20,7 +21,7 @@ from db import (DB, BadRequest, KeyNotFound, UsernameAlreadyExists)
 app = Flask(__name__)
 
 # path to database
-DATABASE = './database.db'
+DATABASE = './myfinancials.db'
 
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = secrets.token_urlsafe(50)
@@ -197,7 +198,7 @@ def mygoals():
     message = None
     mygoals = None
     try:
-        mygoals = db.mygoals(session['username'])
+        (mygoals, total) = db.mygoals(session['username'])
         print(mygoals)
     except BadRequest as e:
         app.logger.error(f"{e}")
@@ -205,6 +206,7 @@ def mygoals():
     return render_template(
         "mygoals.html", 
         rows=mygoals,
+        total=total, 
         table="goals",
         message=message,
         username=session['username']
@@ -236,13 +238,14 @@ def mydebt():
     message = None
     mydebt = None
     try:
-        mydebt = db.mydebt(session['username'])
+        (mydebt, total) = db.mydebt(session['username'])
         print(mydebt)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
     return render_template(
         "mydebt.html",
+        total=total, 
         rows=mydebt,
         table="debt",
         message=message,
@@ -281,7 +284,7 @@ def myincome(target_date = None):
     else:
         target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
-        myincome = db.myincome(session['username'], target_date)
+        (myincome, total) = db.myincome(session['username'], target_date)
         print(myincome)
     except BadRequest as e:
         app.logger.error(f"{e}")
@@ -289,6 +292,7 @@ def myincome(target_date = None):
     return render_template(
         "myincome.html",
         rows=myincome,
+        total=total, 
         month=calendar.month_name[target_date.month],
         year=target_date.year,
         table="income",
@@ -363,10 +367,13 @@ def close_connection(exception):
 def init_db():
     with app.app_context():
         db = get_db()
-        with app.open_resource('schema.sql', mode='r') as f:
+        with app.open_resource('./static/schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
     
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    if not os.path.isfile("myfinancials.db"):
+        open("myfinancials.db", "w")
+        init_db()
+    app.run(threaded=True, port=5000, debug=False)

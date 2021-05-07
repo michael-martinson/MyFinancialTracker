@@ -38,11 +38,23 @@ $(document).ready(function () {
     );
     $(".e-data").on(
         "contextmenu",
-        row_rightclick_e
+        row_rightclick
+    );
+    $(".e-data").on(
+        "click",
+        show_spending
     );
     $(".tr-data").on(
         "contextmenu",
         row_rightclick
+    );
+    $(".str-data").on(
+        "contextmenu",
+        row_rightclick
+    );
+    $("#add-record-button").on(
+        "click",
+        show_add_buttons
     );
     $(".tablenav").on(
         "click",
@@ -139,61 +151,52 @@ let rowedit_buttons = `
     <button class="btn btn-rowedit rowedit__deleterow">Delete Row</button>
 `
 
-function row_rightclick_e(event) {
+function show_spending(event) {
     event.preventDefault();
-    let buttons = document.createElement('div')
-    buttons.className = "rowedit-buttons"
-    buttons.innerHTML = rowedit_buttons_e;
-    buttons.style.position = "absolute";
-    buttons.style.left = `${event.clientX}px`;
-    buttons.style.top = `${event.clientY}px`;
-    $('body').append(buttons);
-    $(`.rowedit-buttons`).on(
-        "mouseleave",
-        function() {
-            $(this).remove();
-        }
-    );
     let rid = event.target.parentElement.cells[0].innerHTML;
 
-    // Show spending
-    $(".rowedit__spending").on(
-        "click",
-        function() {
-            console.log("Hello there", rid);
-            $(`.stc-${rid}`).css("display", "table-cell");
-            $('.rowedit-buttons').remove();
-        }
-    );
+    $(`.stc-${rid}`).css("display", "table-cell");
 
-    // Hide spending
-    $(".rowedit__hide").on(
+    $(".e-data").on(
         "click",
-        function() {
-            $(`.stc-${rid}`).css("display", "none");
-            $('.rowedit-buttons').remove();
-        }
-    );
-
-    // Delete the row
-    let tablename = document.querySelector(".tablename").innerHTML;
-    if (!tablename) {
-        tablename = "expenses";
-    }
-    $(`.rowedit__deleterow`).on(
-        "click",
-        function() {
-            post("/deleterow", { "rid": rid, "tablename": tablename});
-            $('.rowedit-buttons').remove();
-        }
+        hide_spending
     );
 }
+
+function hide_spending(event) {
+    event.preventDefault();
+    let rid = event.target.parentElement.cells[0].innerHTML;
+
+    $(`.stc-${rid}`).css("display", "none");
+
+    $(".e-data").on(
+        "click",
+        show_spending
+    );
+}
+
 
 let rowedit_buttons_e = `
     <button class="btn btn-rowedit rowedit__spending">Show Spending</button>
     <button class="btn btn-rowedit rowedit__hide">Hide Spending</button>
     <button class="btn btn-rowedit rowedit__deleterow">Delete Row</button>
 `
+
+function show_add_buttons() {
+    $(".btn-add").css("display", "block")
+    $("#add-record-button").on(
+        "click",
+        hide_add_buttons
+    );
+}
+
+function hide_add_buttons() {
+    $(".btn-add").css("display", "none")
+    $("#add-record-button").on(
+        "click",
+        show_add_buttons
+    );
+}
 
 function append_form(params) {
     console.log("appending a form")
@@ -267,7 +270,6 @@ let form_addexpense = `
             <label for="repeat">Repeats</label>
             <select id="repeat" name="repeat" required>
                 <option value="onetime">One time</option>
-                <option value="weekly">Weekly</option>
                 <option value="biweekly">Biweekly</option>
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>

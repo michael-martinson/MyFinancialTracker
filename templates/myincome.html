@@ -27,6 +27,15 @@
             <td>{{row[5]}}</td>
         </tr>
         {% endfor %}
+        {% if total %}
+        <tr class="tr-total">
+            <td>Total:</td>
+            <td></td>
+            <td>${{total}}</td>
+            <td></td>
+            <td></td>
+        </tr>
+        {% endif %}
         {% endif %}
     </table>
 </div>

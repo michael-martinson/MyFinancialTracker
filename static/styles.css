@@ -93,7 +93,9 @@ a:visited {
 }
 
 .data-buttons {
-  display: inline-block;
+  position: fixed;
+  left: 5px;
+  top: 125px;
 }
 
 .btn {
@@ -109,11 +111,24 @@ a:visited {
   cursor: pointer;
 }
 
-.btn-add {
-  position: sticky;
-  float: right;
-  width: 15%;
+.add-buttons {
+  position: fixed;
+  right: 5px;
+  top: 125px;
+}
+
+.add-buttons {
+  display: flex;
+  flex-flow: column nowrap;
+}
+
+.btn-add, #add-record-button {
+  width: 200px;
   margin: 0px 0px 5px 5px;
+}
+
+.btn-add {
+  display: none;
 }
 
 .btn-import {

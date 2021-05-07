@@ -343,6 +343,7 @@ def importcsv():
 ########################################
 
 def check_logged_in():
+    print(session)
     if 'username' in session:
         print("you are logged in! " + session['username'])
         return True

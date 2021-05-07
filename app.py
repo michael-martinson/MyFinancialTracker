@@ -373,7 +373,5 @@ def init_db():
     
 
 if __name__ == "__main__":
-    if not os.path.isfile("myfinancials.db"):
-        open("myfinancials.db", "w")
-        init_db()
+    app.config.update(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True)
     app.run(threaded=True, port=5000, debug=False)

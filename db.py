@@ -76,7 +76,7 @@ class DB:
     # Again never do this, you should only execute parameterized query
     # See https://docs.python.org/3/library/sqlite3.html#sqlite3.Cursor.execute
     # This is the qmark style:
-    # cur.execute("insert into people values (?, ?)", (who, age))
+    # cur.execute("insert into people values (%s, %s)", (who, age))
     # And this is the named style:
     # cur.execute("select * from people where name_last=:who and age=:age", {"who": who, "age": age})
     def run_query(self, query):
@@ -95,7 +95,8 @@ class DB:
 
     def import_csvdata(self, username, file, tablename):
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        c.execute("select user_id from users where username = %s", (username,))
+        user_id = c.fetchone()[0]
 
         try:
             # csv.DictReader uses first line in file for column headings by default
@@ -120,11 +121,11 @@ class DB:
 
         print(to_db)
         whichtable = {
-            "spending":"insert into spending (name,amount,date,category,owner,expense_name,user_id) values (?,?,?,?,?,?,?)",
-            "expenses":"insert into expenses (name,expected,due_date,repeat_type,owner,user_id) values (?,?,?,?,?,?)",
-            "goals":"insert into goals (name,target,amount,target_date,owner,user_id) values (?,?,?,?,?,?)",
-            "debt":"insert into debt (name,amount,target_date,owner,user_id) values (?,?,?,?,?)",
-            "income":"insert into income (name,amount,date,type,owner,user_id) values (?,?,?,?,?,?)"
+            "spending":"insert into spending (name,amount,date,category,owner,expense_name,user_id) values (%s,%s,%s,%s,%s,%s,%s)",
+            "expenses":"insert into expenses (name,expected,due_date,repeat_type,owner,user_id) values (%s,%s,%s,%s,%s,%s)",
+            "goals":"insert into goals (name,target,amount,target_date,owner,user_id) values (%s,%s,%s,%s,%s,%s)",
+            "debt":"insert into debt (name,amount,target_date,owner,user_id) values (%s,%s,%s,%s,%s)",
+            "income":"insert into income (name,amount,date,type,owner,user_id) values (%s,%s,%s,%s,%s,%s)"
         }
         try:
             c.executemany(whichtable[tablename], to_db)
@@ -149,13 +150,14 @@ class DB:
         c = self.conn.cursor()
 
         # enforce unique usernames
-        c.execute("select * from users where username = (?)", (username,))
+        c.execute(f"select * from users where username = %s", (username,))
         record = c.fetchone()
         if record:
             print("The username {} already exists".format(username))
             raise UsernameAlreadyExists("username already exists")
         try:
-            c.execute("insert into users (username,password) values (?,?)", (username, salt+key))
+            print((salt+key), (salt+key).hex())
+            c.execute("insert into users (username,password) values (%s,%s)", (username, (salt+key).hex()))
         except UsernameAlreadyExists as e:
             print("Failed to add new user: {}".format(e))
             raise BadRequest(e)
@@ -172,7 +174,7 @@ class DB:
         c = self.conn.cursor()
 
         try:
-            c.execute("select * from users where username = (?)", (username,))
+            c.execute("select * from users where username = %s", (username,))
             record = c.fetchone()
             if not record:
                 print("No user with username {} exists".format(username))
@@ -183,10 +185,11 @@ class DB:
 
         c.close()
         print(f"found user with that username: {record}")
-        hashed_password = record[2]
+        print(record[2])
+        hashed_password = bytes.fromhex(record[2])
+        print(hashed_password)
         salt = hashed_password[:32] 
         key = hashed_password[32:]
-        print(f"{key}")
         if (hash_password(password, salt)[1] != key):
             print("wrong password for user {}".format(username))
             return False
@@ -200,15 +203,16 @@ class DB:
     def delete_record(self, username, tablename, rid):
         c = self.conn.cursor()
         # get active user
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        c.execute("select user_id from users where username = %s", (username,))
+        user_id = c.fetchone()[0]
         
         # users can only delete records they created
         whichtable = {
-            "spending":"delete from spending where spending_id = (?) and user_id = (?)",
-            "expenses":"delete from expenses where expense_id = (?) and user_id = (?)",
-            "goals":"delete from goals where goal_id = (?) and user_id = (?)",
-            "debt":"delete from debt where debt_id = (?) and user_id = (?)",
-            "income":"delete from income where income_id = (?) and user_id = (?)",
+            "spending":"delete from spending where spending_id = %s and user_id = %s",
+            "expenses":"delete from expenses where expense_id = %s and user_id = %s",
+            "goals":"delete from goals where goal_id = %s and user_id = %s",
+            "debt":"delete from debt where debt_id = %s and user_id = %s",
+            "income":"delete from income where income_id = %s and user_id = %s",
         }
         try:
             c.execute(whichtable[tablename], (rid,user_id))
@@ -241,15 +245,15 @@ class DB:
             next_month = date(duedate.year+1, 1, 1).strftime("%Y-%m-%d")
         else: 
             next_month = date(duedate.year, duedate.month+1, 1).strftime("%Y-%m-%d")
-        c.execute("select name from expenses where user_id = (?) and name = (?) and due_date > (?) and due_date < (?)", (record[5], record[0], target_month, next_month))
+        c.execute("select name from expenses where user_id = %s and name = %s and due_date > %s and due_date < %s", (record[5], record[0], target_month, next_month))
         res = c.fetchone()
         if res:
             print("The expense name {} already exists".format(res[0]))
             raise UsernameAlreadyExists("Expense name already exists")
         try:
             print("insert record", record)
-            c.execute("insert into expenses (name,expected,due_date,repeat_type,owner,user_id) values (?,?,?,?,?,?)", record)
-            c.execute("select expense_id from expenses where user_id = (?) and name = (?)", (record[5], record[0]))
+            c.execute("insert into expenses (name,expected,due_date,repeat_type,owner,user_id) values (%s,%s,%s,%s,%s,%s)", record)
+            c.execute("select expense_id from expenses where user_id = %s and name = %s", (record[5], record[0]))
         except Exception as e:
             print("Failed to add expense: {}".format(e))
             raise BadRequest(e)
@@ -273,7 +277,8 @@ class DB:
         
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        c.execute("select user_id from users where username = %s", (username,))
+        user_id = c.fetchone()[0]
 
         try:
             self.insert_expense((name,expected,edate,repeat_type,owner,user_id))
@@ -288,40 +293,46 @@ class DB:
     def myexpenses(self, username, target_date):
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
         target_month = date(target_date.year, target_date.month, 1).strftime("%Y-%m-%d")
         if target_date.month == 12:
             next_month = date(target_date.year+1, 1, 1).strftime("%Y-%m-%d")
         else: 
             next_month = date(target_date.year, target_date.month+1, 1).strftime("%Y-%m-%d")
 
+        try: 
+            c.execute("select user_id from users where username = %s", (username,))
+            user_id = c.fetchone()[0]
+        except Exception as e:
+            raise Exception("no user_id")
         try:
             # totals per month
-            c.execute("select sum(expected) from expenses where user_id = (?) and due_date >= (?) and due_date < (?)", (user_id, target_month, next_month))
+            c.execute("select sum(expected) from expenses where user_id = %s and due_date >= %s and due_date < %s", (user_id, target_month, next_month))
             etotal = c.fetchone()[0]
-            c.execute("select sum(amount) from spending where user_id = (?) and expense_name != '' and date >= (?) and date < (?)", (user_id, target_month, next_month))
+            if not etotal:
+                etotal = 0
+            c.execute("select sum(amount) from spending where user_id = %s and expense_name != '' and date >= %s and date < %s", (user_id, target_month, next_month))
             stotal = c.fetchone()[0]
             if not stotal:
                 stotal = 0
 
             c.execute(
                 '''
-                select expense_id,strftime("%m/%d/%Y", due_date),name,expected,repeat_type,owner from expenses 
-                where user_id = (?) and due_date >= (?) and due_date < (?) or repeat_type = "monthly"
+                select expense_id,to_char(due_date, 'DD/MM/YYYY'),name,expected,repeat_type,owner from expenses 
+                where user_id = %s and due_date >= %s and due_date < %s or repeat_type = 'monthly'
                 order by due_date asc, name;
-                ''', (user_id,target_month, next_month)
+                ''', (user_id,target_month, next_month,)
             )
             expenses = c.fetchall()
             result = []
             for e in expenses:
-                c.execute("select sum(amount) from spending where user_id = (?) and expense_name = (?) and date >= (?) and date < (?)", (user_id,e[2],target_month, next_month))
+                c.execute("select sum(amount) from spending where user_id = %s and expense_name = %s and date >= %s and date < %s", (user_id,e[2],target_month, next_month))
                 tot = c.fetchone()[0]
                 if not tot:
                     tot = 0
                 c.execute(
                     '''
-                    select spending_id,strftime("%m/%d/%Y", date),name,amount,expense_name,category,owner from spending 
-                    where user_id = (?) and expense_name = (?) and date >= (?) and date < (?)
+                    select spending_id,to_char(date, 'DD/MM/YY'),name,amount,expense_name,category,owner from spending 
+                    where user_id = %s and expense_name = %s and date >= %s and date < %s
                     order by date desc, name;
                     ''', (user_id, e[2], target_month, next_month)
                 )
@@ -361,10 +372,11 @@ class DB:
         
         c = self.conn.cursor()
         # get active user
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        c.execute("select user_id from users where username = %s", (username,))
+        user_id = c.fetchone()[0]
 
         try:
-            c.execute("insert into spending (name,amount,date,category,owner,expense_name,user_id) values (?,?,?,?,?,?,?)", (name,amount,sdate,category,owner,expensename,user_id))
+            c.execute("insert into spending (name,amount,date,category,owner,expense_name,user_id) values (%s,%s,%s,%s,%s,%s,%s)", (name,amount,sdate,category,owner,expensename,user_id))
         except Exception as e:
             print("Failed to add spending: {}".format(e))
             raise BadRequest(e)
@@ -376,7 +388,6 @@ class DB:
     def myspending(self, username, target_date):
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
         target_month = date(target_date.year, target_date.month, 1).strftime("%Y-%m-%d")
         if target_date.month == 12:
             next_month = date(target_date.year+1, 1, 1).strftime("%Y-%m-%d")
@@ -384,13 +395,18 @@ class DB:
             next_month = date(target_date.year, target_date.month+1, 1).strftime("%Y-%m-%d")
 
         total = None
+        try: 
+            c.execute("select user_id from users where username = %s", (username,))
+            user_id = c.fetchone()[0]
+        except Exception as e:
+            raise Exception("no user_id")
         try:
-            c.execute("select sum(amount) from spending where user_id = (?) and date >= (?) and date < (?)", (user_id,target_month,next_month))
+            c.execute("select sum(amount) from spending where user_id = %s and date >= %s and date < %s", (user_id,target_month,next_month))
             total = c.fetchone()[0]
             c.execute(
                 '''
-                select spending_id,strftime("%m/%d/%Y", date),name,amount,expense_name,category,owner from spending 
-                where user_id = (?) and date >= (?) and date < (?)
+                select spending_id,to_char(date, 'DD/MM/YY'),name,amount,expense_name,category,owner from spending 
+                where user_id = %s and date >= %s and date < %s
                 order by date desc, name;
                 ''', (user_id,target_month,next_month) 
             )
@@ -420,10 +436,11 @@ class DB:
         
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        c.execute("select user_id from users where username = %s", (username,))
+        user_id = c.fetchone()[0]
 
         try:
-            c.execute("insert into goals (name,target,amount,target_date,owner,user_id) values (?,?,?,?,?,?)", (name,target,amount,gdate,owner,user_id))
+            c.execute("insert into goals (name,target,amount,target_date,owner,user_id) values (%s,%s,%s,%s,%s,%s)", (name,target,amount,gdate,owner,user_id))
         except Exception as e:
             print("Failed to add goal: {}".format(e))
             raise BadRequest(e)
@@ -435,15 +452,19 @@ class DB:
     def mygoals(self, username):
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
+        try: 
+            c.execute("select user_id from users where username = %s", (username,))
+            user_id = c.fetchone()[0]
+        except Exception as e:
+            raise Exception("no user_id")
         try:
-            c.execute("select sum(target) from goals where user_id = (?)", (user_id,))
+            c.execute("select sum(target) from goals where user_id = %s", (user_id,))
             total = c.fetchone()[0]
             c.execute(
                 '''
-                select goal_id,strftime("%m/%d/%Y", target_date),name,target,amount,owner from goals 
-                where user_id = (?) 
+                select goal_id,to_char(target_date, 'DD/MM/YY'),name,target,amount,owner from goals 
+                where user_id = %s 
                 order by target_date desc, name;
                 ''', (user_id,)
             )
@@ -472,10 +493,10 @@ class DB:
         
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
         try:
-            c.execute("insert into debt (name,amount,target_date,owner,user_id) values (?,?,?,?,?)", (name,amount,ddate,owner,user_id))
+            user_id = c.execute("select user_id from users where username = %s", (username,)).fetchone()[0]
+            c.execute("insert into debt (name,amount,target_date,owner,user_id) values (%s,%s,%s,%s,%s)", (name,amount,ddate,owner,user_id))
         except Exception as e:
             print("Failed to add debt: {}".format(e))
             raise BadRequest(e)
@@ -487,15 +508,18 @@ class DB:
     def mydebt(self, username):
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
 
+        try: 
+            c.execute("select user_id from users where username = %s", (username,))
+            user_id = c.fetchone()[0]
+        except Exception as e:
+            raise Exception("no user_id")
         try:
-            c.execute("select sum(amount) from debt where user_id = (?)", (user_id,))
             total = c.fetchone()[0]
             c.execute(
                 '''
-                select debt_id,strftime("%m/%d/%Y", target_date),name,amount,owner from debt 
-                where user_id = (?) 
+                select debt_id,to_char(target_date, 'DD/MM/YY'),name,amount,owner from debt 
+                where user_id = %s 
                 order by target_date desc, name;
                 ''', (user_id,)
             )
@@ -526,10 +550,11 @@ class DB:
         
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
+        c.execute("select user_id from users where username = %s", (username,))
+        user_id = c.fetchone()[0]
 
         try:
-            c.execute("insert into income (name,amount,date,type,owner,user_id) values (?,?,?,?,?,?)", (name,amount,idate,type,owner,user_id))
+            c.execute("insert into income (name,amount,date,type,owner,user_id) values (%s,%s,%s,%s,%s,%s)", (name,amount,idate,type,owner,user_id))
         except Exception as e:
             print("Failed to add income: {}".format(e))
             raise BadRequest(e)
@@ -541,20 +566,24 @@ class DB:
     def myincome(self, username, target_date):
         # get active user
         c = self.conn.cursor()
-        user_id = c.execute("select user_id from users where username = (?)", (username,)).fetchone()[0]
         target_month = date(target_date.year, target_date.month, 1).strftime("%Y-%m-%d")
         if target_date.month == 12:
             next_month = date(target_date.year+1, 1, 1).strftime("%Y-%m-%d")
         else: 
             next_month = date(target_date.year, target_date.month+1, 1).strftime("%Y-%m-%d")
 
+        try: 
+            c.execute("select user_id from users where username = %s", (username,))
+            user_id = c.fetchone()[0]
+        except Exception as e:
+            raise Exception("no user_id")
         try:
-            c.execute("select sum(amount) from income where user_id = (?) and date >= (?) and date < (?)", (user_id,target_month,next_month))
+            c.execute("select sum(amount) from income where user_id = %s and date >= %s and date < %s", (user_id,target_month,next_month))
             total = c.fetchone()[0]
             c.execute(
                 '''
-                select income_id,strftime("%m/%d/%Y", date),name,amount,type,owner from income 
-                where user_id = (?) and date >= (?) and date < (?)
+                select income_id,to_char(date, 'DD/MM/YY'),name,amount,type,owner from income 
+                where user_id = %s and date >= %s and date < %s
                 order by date desc, name;
                 ''', (user_id,target_month,next_month)
             )

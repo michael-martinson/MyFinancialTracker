@@ -9,20 +9,21 @@ from flask import (
     g,
     Response,
 ) 
-import sqlite3
+# import sqlite3
 import json
 from markupsafe import escape
 import secrets
 import os
 import datetime, calendar
 from db import (DB, BadRequest, KeyNotFound, UsernameAlreadyExists)
+import psycopg2
 
 # Configure application
 app = Flask(__name__)
 app.config.update(SESSION_COOKIE_SAMESITE="None", SESSION_COOKIE_SECURE=True)
 
 # path to database
-DATABASE = './myfinancials.db'
+# DATABASE = './myfinancials.db'
 
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = 'f4_LpwUFVA2WaLjsjcwrgS8WrFt4pmAa4A' 
@@ -99,6 +100,7 @@ def addexpense():
 @app.route('/myexpenses/<target_date>', methods=['Get'])
 def myexpenses(target_date = None):
     if not check_logged_in():
+        print("hiiiii")
         return redirect(url_for('login'))
     db = DB(get_db())
     message = None
@@ -111,10 +113,11 @@ def myexpenses(target_date = None):
         target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
         (myexpenses,etot,stot) = db.myexpenses(session['username'], target_date)
-        print(myexpenses, etot, stot)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
+    except Exception as e:
+        return redirect(url_for('login'))
     return render_template(
         "myexpenses.html", 
         rows=myexpenses,
@@ -158,7 +161,6 @@ def myspending(target_date = None):
         target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
         (myspending, total) = db.myspending(session['username'], target_date)
-        print(myspending)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -200,7 +202,6 @@ def mygoals():
     mygoals = None
     try:
         (mygoals, total) = db.mygoals(session['username'])
-        print(mygoals)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -240,7 +241,6 @@ def mydebt():
     mydebt = None
     try:
         (mydebt, total) = db.mydebt(session['username'])
-        print(mydebt)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -279,14 +279,12 @@ def myincome(target_date = None):
     db = DB(get_db())
     message = None
     myincome = None
-    print("income", target_date)
     if not target_date:
         target_date = datetime.date.today()
     else:
         target_date = datetime.datetime.strptime(target_date, "%Y-%m-%d").date()
     try:
         (myincome, total) = db.myincome(session['username'], target_date)
-        print(myincome)
     except BadRequest as e:
         app.logger.error(f"{e}")
         message = "Something went wrong. Please try again"
@@ -314,7 +312,6 @@ def deleterow():
     message = "row deleted successfully"
     try:
         data = json.loads(request.data.decode())
-        print("deleterow", data)
         db.delete_record(session['username'], data['tablename'], data['rid'])
     except BadRequest as e:
         app.logger.error(f"{e}")
@@ -355,7 +352,12 @@ def check_logged_in():
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        # db = g._database = sqlite3.connect(DATABASE)
+        #establishing the connection
+        db = g._database = psycopg2.connect(
+            database="myfinancials", user='postgres', password='postgres'
+        )
+        db.autocommit = True
     return db
 
 # close connectiong to db
@@ -370,7 +372,7 @@ def init_db():
     with app.app_context():
         db = get_db()
         with app.open_resource('./static/schema.sql', mode='r') as f:
-            db.cursor().executescript(f.read())
+            db.cursor().execute(f.read())
         db.commit()
     
 

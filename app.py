@@ -359,7 +359,7 @@ def get_db():
             user='hivembvhcpxsdb',
             password='1321404f100002f28266e3b26d0b79106cd73fb9e58d7ad4127d759d8482b649',
             port='5432',
-            # host=
+            host='ec2-52-21-153-207.compute-1.amazonaws.com',
         )
         db.autocommit = True
     return db

@@ -355,7 +355,11 @@ def get_db():
         # db = g._database = sqlite3.connect(DATABASE)
         #establishing the connection
         db = g._database = psycopg2.connect(
-            database="myfinancials", user='postgres', password='postgres'
+            database="d6coe2acjtc5c2",
+            user='hivembvhcpxsdb',
+            password='1321404f100002f28266e3b26d0b79106cd73fb9e58d7ad4127d759d8482b649',
+            port='5432',
+            # host=
         )
         db.autocommit = True
     return db

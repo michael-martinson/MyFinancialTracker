@@ -317,7 +317,7 @@ class DB:
 
             c.execute(
                 '''
-                select expense_id,to_char(due_date, 'DD/MM/YYYY'),name,expected,repeat_type,owner from expenses 
+                select expense_id,to_char(due_date, 'MM/DD/YYYY'),name,expected,repeat_type,owner from expenses 
                 where user_id = %s and due_date >= %s and due_date < %s or repeat_type = 'monthly'
                 order by due_date asc, name;
                 ''', (user_id,target_month, next_month,)
@@ -331,7 +331,7 @@ class DB:
                     tot = 0
                 c.execute(
                     '''
-                    select spending_id,to_char(date, 'DD/MM/YY'),name,amount,expense_name,category,owner from spending 
+                    select spending_id,to_char(date, 'MM/DD/YY'),name,amount,expense_name,category,owner from spending 
                     where user_id = %s and expense_name = %s and date >= %s and date < %s
                     order by date desc, name;
                     ''', (user_id, e[2], target_month, next_month)
@@ -362,6 +362,7 @@ class DB:
         name = request.form['name'].capitalize()
         amount = request.form['amount']
         expensename = request.form['linkedExpense'].capitalize()
+        print(expensename)
         category = request.form['category'].lower()
         owner = request.form['owner']
         if not owner:
@@ -405,7 +406,7 @@ class DB:
             total = c.fetchone()[0]
             c.execute(
                 '''
-                select spending_id,to_char(date, 'DD/MM/YY'),name,amount,expense_name,category,owner from spending 
+                select spending_id,to_char(date, 'MM/DD/YY'),name,amount,expense_name,category,owner from spending 
                 where user_id = %s and date >= %s and date < %s
                 order by date desc, name;
                 ''', (user_id,target_month,next_month) 
@@ -463,7 +464,7 @@ class DB:
             total = c.fetchone()[0]
             c.execute(
                 '''
-                select goal_id,to_char(target_date, 'DD/MM/YY'),name,target,amount,owner from goals 
+                select goal_id,to_char(target_date, 'MM/DD/YY'),name,target,amount,owner from goals 
                 where user_id = %s 
                 order by target_date desc, name;
                 ''', (user_id,)
@@ -518,7 +519,7 @@ class DB:
             total = c.fetchone()[0]
             c.execute(
                 '''
-                select debt_id,to_char(target_date, 'DD/MM/YY'),name,amount,owner from debt 
+                select debt_id,to_char(target_date, 'MM/DD/YY'),name,amount,owner from debt 
                 where user_id = %s 
                 order by target_date desc, name;
                 ''', (user_id,)
@@ -582,7 +583,7 @@ class DB:
             total = c.fetchone()[0]
             c.execute(
                 '''
-                select income_id,to_char(date, 'DD/MM/YY'),name,amount,type,owner from income 
+                select income_id,to_char(date, 'MM/DD/YY'),name,amount,type,owner from income 
                 where user_id = %s and date >= %s and date < %s
                 order by date desc, name;
                 ''', (user_id,target_month,next_month)

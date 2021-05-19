@@ -362,10 +362,8 @@ class DB:
         name = request.form['name'].capitalize()
         amount = request.form['amount']
         expensename = request.form['linkedExpense'].capitalize()
-        print(expensename)
         if expensename == "":
             expensename = None
-        print(expensename)
         category = request.form['category'].lower()
         owner = request.form['owner']
         if not owner:
